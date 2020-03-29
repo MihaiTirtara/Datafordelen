@@ -7,15 +7,20 @@ using MongoDB.Driver;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
+using Confluent.Kafka;
 
 namespace Work
 {
     class Program
     {
+        
+        private static  List<string> husnummers = new List<string>();
 
-        public async static Task Main(string[] args)
+        public static void Main(string[] args)
         {
-            await mongoDBWriter();
+            //await mongoDBWriter();
+            //await mongoDbReader();
+             KafkaProducer();
         }
 
         private async static Task HandleInvalidBatch(List<BsonDocument> invalidDocuments, IMongoCollection<BsonDocument> collection)
@@ -130,7 +135,76 @@ namespace Work
 
         }
 
-        public async static Task MonogoDbReader()
+        public  static void KafkaProducer()
+        {
+            string inputFileName = "/home/mehigh/Addresses2/Addresses2.json";
+
+            var config = new ProducerConfig {BootstrapServers = "localhost:9092",LingerMs = 30, BatchNumMessages = 10000, QueueBufferingMaxMessages = 100000 };
+            String jsonDoc = "";
+            List<String> batch = new List<string>();
+            int i = 0;
+
+/*
+            Action<DeliveryReport<Null, string>> handler = r => 
+            Console.WriteLine(!r.Error.IsError
+                ? $"Delivered message to {r.TopicPartitionOffset}"
+                : $"Delivery Error: {r.Error.Reason}");
+*/
+
+            using (var streamReader = new StreamReader(inputFileName))
+            {
+                using (var reader = new Newtonsoft.Json.JsonTextReader(streamReader))
+                {
+                    while (reader.Read())
+                    {
+                        if (reader.TokenType == Newtonsoft.Json.JsonToken.StartArray)
+                        {
+                            //Console.WriteLine(reader.TokenType);
+                            while (reader.Read())
+                            {
+                                if (reader.TokenType == Newtonsoft.Json.JsonToken.StartObject)
+                                {
+                                    Object obj = new Newtonsoft.Json.JsonSerializer().Deserialize(reader);
+                                    jsonDoc = Newtonsoft.Json.JsonConvert.SerializeObject(obj);
+                                }
+
+                                batch.Add(jsonDoc);
+                                //Console.WriteLine(batch.Count);
+                                if(batch.Count >= 10000)
+                                {
+                
+
+                                using (var p = new ProducerBuilder<Null, String>(config).Build())
+                                {
+                                    i+= 10000;
+                                    foreach(var document in batch)
+                                    {
+                                    
+                                    try
+                                    { 
+                                        p.Produce("address-topic", new Message<Null, string> { Value = document });
+                                    }
+                                    catch (ProduceException<Null, string> e)
+                                    {
+                                        Console.WriteLine($"Delivery failed: {e.Error.Reason}");
+                                    }
+
+                                    }
+                                     p.Flush(TimeSpan.FromSeconds(10));
+                                     batch.Clear();
+                                     Console.WriteLine(i);          
+                                }
+                                    }
+
+                                    
+                            }
+                        }
+                    }
+                    }
+                }
+        }
+
+        public async static Task mongoDbReader()
         {
             const string connectionString = "mongodb://localhost:27017";
 
@@ -150,20 +224,22 @@ namespace Work
                     IEnumerable<BsonDocument> batch  = cursor.Current;
                     foreach(BsonDocument document in batch)
                     {
-                        HorsensHusnnumer.Add(document);
+                        var newDoc = Newtonsoft.Json.JsonConvert.SerializeObject(document);
+
+                        husnummers.Add(newDoc);
 
                     }
-                }
 
-                Console.WriteLine("The number of house numbers are" + HorsensHusnnumer.Count);
+                    Console.WriteLine("The number of house numbers are " + HorsensHusnnumer.Count);
+
+                }
 
             }
 
 
-
-
-
         }
+
+
     }
 
 }
