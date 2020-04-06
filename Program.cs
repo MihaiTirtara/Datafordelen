@@ -20,7 +20,8 @@ namespace Work
         {
             //await mongoDBWriter();
             //await mongoDbReader();
-             KafkaProducer();
+             //adressKafkaProducer("/home/mehigh/Addresses2/Addresses2.json");
+             ProcessDirectory("/home/mehigh/GeoData","geodata-topic");
         }
 
         private async static Task HandleInvalidBatch(List<BsonDocument> invalidDocuments, IMongoCollection<BsonDocument> collection)
@@ -35,28 +36,6 @@ namespace Work
                 {
                     Console.WriteLine(item.ToJson());
                     break;
-                    /*
-                    BsonValue value = null;
-                    var filter = Builders<BsonDocument>.Filter.Eq("id_lokalId", item.GetValue("id_lokalId"));
-                    var filter2 = Builders<BsonDocument>.Filter.Eq("virkningTil",value);
-                    var results = collection.Find(filter).ToList();
-                    var sortedResults = results.OrderBy(e => e.GetValue("registreringFra"));
-                    //var list =  Newtonsoft.Json.JsonConvert.SerializeObject(results);
-                    Console.WriteLine(sortedResults.Count());
-                  
-                    foreach(var result in sortedResults)
-                    {
-                        Console.WriteLine("This is the same object " + result);
-                    }
-                    */
-                    //Console.WriteLine("This is the last element in list " + sortedResults.Last() );
-                    //await collection.FindOneAndUpdateAsync()
-
-                    // Find a address in mongodb with the same id lokalid
-                    
-                    // Compare the registreringFra and take the newest one
-
-                    // Update the document based on the id, with the newest data
                 }
             }
         }
@@ -135,9 +114,9 @@ namespace Work
 
         }
 
-        public  static void KafkaProducer()
+        public  static void KafkaProducer(String filename, String topicname)
         {
-            string inputFileName = "/home/mehigh/Addresses2/Addresses2.json";
+            //string inputFileName = "/home/mehigh/Addresses2/Addresses2.json";
 
             var config = new ProducerConfig {BootstrapServers = "localhost:9092",LingerMs = 30, BatchNumMessages = 10000, QueueBufferingMaxMessages = 100000 };
             String jsonDoc = "";
@@ -151,7 +130,7 @@ namespace Work
                 : $"Delivery Error: {r.Error.Reason}");
 */
 
-            using (var streamReader = new StreamReader(inputFileName))
+            using (var streamReader = new StreamReader(filename))
             {
                 using (var reader = new Newtonsoft.Json.JsonTextReader(streamReader))
                 {
@@ -182,7 +161,7 @@ namespace Work
                                     
                                     try
                                     { 
-                                        p.Produce("address-topic", new Message<Null, string> { Value = document });
+                                        p.Produce(topicname, new Message<Null, string> { Value = document });
                                     }
                                     catch (ProduceException<Null, string> e)
                                     {
@@ -203,6 +182,18 @@ namespace Work
                     }
                 }
         }
+
+     
+
+        public static void ProcessDirectory(string targetDirectory,string topicname)
+        {
+            string [] fileEntries = Directory.GetFiles(targetDirectory);
+            foreach(string filenName in fileEntries)
+            {
+                Console.WriteLine(filenName);
+                KafkaProducer(filenName,topicname);
+            }
+        }       
 
         public async static Task mongoDbReader()
         {
