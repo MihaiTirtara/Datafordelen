@@ -9,7 +9,10 @@ using System.Collections.Generic;
 using System.Linq;
 using Confluent.Kafka;
 using Newtonsoft.Json.Linq;
+using System.Globalization;
 using System.Text.RegularExpressions;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.IO;
 
 
 namespace Work
@@ -22,11 +25,13 @@ namespace Work
         public static async Task Main(string[] args)
         {
 
-            //ProcessGeoDirectory("/home/mehigh/Adresses_kafka");
-            await AdressToKafka();
+            ProcessGeoDirectory("/home/mehigh/Geo");
+            //await AdressToKafka();
+            //ChangeDateFormat("2020-04-02T10:04:26.979884+02:00");
+
         }
 
-        public static void  ProcessGeoDirectory(string targetDirectory)
+        public static void ProcessGeoDirectory(string targetDirectory)
         {
             string[] fileEntries = Directory.GetFiles(targetDirectory);
             foreach (string filenName in fileEntries)
@@ -36,9 +41,34 @@ namespace Work
             }
         }
 
-        public static async Task  AdressToKafka()
+        public static string ChangeDateFormat(string dateString)
         {
-            using (FileStream fs = new FileStream("/home/mehigh/AddressData/AddressAgain.json", FileMode.Open, FileAccess.Read))
+            DateTime result;
+            if (dateString == null)
+            {
+                //Do nothing
+                dateString = "null";
+                return dateString;
+            }
+            else
+            {
+                try
+                {
+                    result = DateTime.Parse(dateString, null, System.Globalization.DateTimeStyles.RoundtripKind);
+                    //Console.WriteLine("{0} converts to {1}.", dateString, result.ToString("yyyy-MM-dd HH:mm:ss"));
+                    return result.ToString("yyyy-MM-dd HH:mm:ss");
+                }
+                catch (ArgumentNullException)
+                {
+                    Console.WriteLine("{0} is not in the correct format.", dateString);
+                }
+            }
+            return String.Empty;
+        }
+
+        public static async Task AdressToKafka()
+        {
+            using (FileStream fs = new FileStream("/home/mehigh/Adress/DAR.json", FileMode.Open, FileAccess.Read))
             using (StreamReader sr = new StreamReader(fs))
             using (JsonTextReader reader = new JsonTextReader(sr))
             {
@@ -70,7 +100,7 @@ namespace Work
                             dynamic obj = await JObject.LoadAsync(reader);
                             //Console.WriteLine(obj);
                             //jsonText.Add(JsonConvert.SerializeObject(obj, Formatting.Indented));
-                            jsonText.Add(ChangeNumericalPropertyNames(obj));
+                            jsonText.Add(ChangeAdressNames(obj));
 
                             if (jsonText.Count >= 100000)
                             {
@@ -89,7 +119,8 @@ namespace Work
             }
         }
 
-        public static void  JsonToKafka(String filename)
+
+        public static void JsonToKafka(String filename)
         {
             //string inputFileName = "/home/mehigh/Addresses2/Addresses2.json";
 
@@ -97,38 +128,55 @@ namespace Work
             List<String> batch = new List<string>();
 
             using (FileStream s = File.Open(filename, FileMode.Open))
+
             using (var streamReader = new StreamReader(s))
             {
-                Console.WriteLine(filename);
+              //Console.WriteLine(filename);
+             var topicname = Path.GetFileNameWithoutExtension(filename);
+             
                 using (var reader = new Newtonsoft.Json.JsonTextReader(streamReader))
                 {
-                  
-                        
-                   
-                        while (reader.Read())
+                    while (reader.Read())
+                    {
+                        //Console.WriteLine(reader.TokenType);
+                        //Console.WriteLine(reader.Value);
+                        if (reader.TokenType == Newtonsoft.Json.JsonToken.StartObject)
                         {
-
-                            Console.WriteLine(reader.TokenType);
-                            Console.WriteLine(reader.Value);
-                            if (reader.TokenType == Newtonsoft.Json.JsonToken.StartObject)
+                            while (reader.Read())
                             {
-                                //Console.WriteLine(reader.TokenType);
+                                if (reader.TokenType == Newtonsoft.Json.JsonToken.StartArray)
+                                {
+                                    while (reader.Read())
+                                    {
+                                        if (reader.TokenType == Newtonsoft.Json.JsonToken.StartObject)
+                                        {
+                                            Object obj = new Newtonsoft.Json.JsonSerializer().Deserialize(reader);
+                                            jsonDoc = Newtonsoft.Json.JsonConvert.SerializeObject(obj, Formatting.Indented);
+                                            //Console.WriteLine("THis is the object" + jsonDoc);
 
-                                Object obj = new Newtonsoft.Json.JsonSerializer().Deserialize(reader);
-                                jsonDoc = Newtonsoft.Json.JsonConvert.SerializeObject(obj,Formatting.Indented);
-                                Console.WriteLine(jsonDoc);
-                                //var obj = JObject.Load(reader);
-                                //jsonDoc = ChangeNumericalPropertyNames(obj);
+
+                                        }
+                                        batch.Add(jsonDoc);
+                                        //Console.WriteLine(batch.Count());
+                                        if (batch.Count >= 10000)
+                                        {
+                                            KafkaProducerGeo(topicname, batch);
+                                            batch.Clear();
+                                        }
+                                    }
+
+                                    //Console.WriteLine(batch.Count());
+                                    
+
+                                }
+
                             }
-                            //batch.Add(jsonDoc);
 
-                            //Console.WriteLine(batch.Count());
-                            //if (batch.Count >= 10000)
-                           // {
-                             //   KafkaProducer(filename, batch);
-                               // batch.Clear();
-                            //}
                         }
+                        KafkaProducerGeo(topicname, batch);
+                        batch.Clear();
+
+                    }
                 }
             }
         }
@@ -137,18 +185,26 @@ namespace Work
         {
             var config = new ProducerConfig { BootstrapServers = "localhost:9092", LingerMs = 5, BatchNumMessages = 100000, QueueBufferingMaxMessages = 100000 };
             int i = 0;
-            using (var p = new ProducerBuilder<Null, String>(config).Build())
+            using (var p = new ProducerBuilder<String, String>(config).Build())
             {
                 Console.WriteLine(batch.Count());
                 i += 10000;
-             
-                
                 foreach (var document in batch)
                 {
+                    String id = String.Empty;
+
+                    JObject o = JObject.Parse(document);
+                    foreach (JProperty jp in o.Properties().ToList())
+                    {
+                        if (jp.Name == "id_lokalId")
+                        {
+                            id = (String)jp.Value;
+                        }
+                    }
 
                     try
                     {
-                        p.Produce(topicname, new Message<Null, string> { Value = document });
+                        p.Produce(topicname, new Message<String, string> { Value = document, Key = id });
                     }
                     catch (ProduceException<Null, string> e)
                     {
@@ -162,13 +218,50 @@ namespace Work
             }
         }
 
-        public static string ChangeNumericalPropertyNames(JObject jo)
+
+        public static void KafkaProducerGeo(String topicname, List<String> batch)
+        {
+            var config = new ProducerConfig { BootstrapServers = "localhost:9092", LingerMs = 5, BatchNumMessages = 100000, QueueBufferingMaxMessages = 100000 };
+            int i = 0;
+            using (var p = new ProducerBuilder<String, String>(config).Build())
+            {
+                Console.WriteLine(topicname);
+                Console.WriteLine(batch.Count());
+                i += 10000;
+
+
+                foreach (var document in batch)
+                {
+                    String id = String.Empty;
+
+                    JObject o = JObject.Parse(document);
+                    //Console.Write(o);
+                    id = o["properties"]["gml_id"].ToString();
+
+                    try
+                    {
+                        p.Produce(topicname, new Message<String, string> { Value = document, Key = id });
+                    }
+                    catch (ProduceException<Null, string> e)
+                    {
+                        Console.WriteLine($"Delivery failed: {e.Error.Reason}");
+                    }
+
+                }
+                p.Flush(TimeSpan.FromSeconds(10));
+                Console.WriteLine(i);
+                //Console.WriteLine(topicname);
+            }
+        }
+
+
+        public static string ChangeAdressNames(JObject jo)
         {
             //Console.WriteLine("inside function");
 
             foreach (JProperty jp in jo.Properties().ToList())
             {
-                switch(jp.Name)
+                switch (jp.Name)
                 {
                     case "forretningshændelse":
                         jp.Replace(new JProperty("businessEvent", jp.Value));
@@ -180,21 +273,29 @@ namespace Work
                         jp.Replace(new JProperty("businessProces", jp.Value));
                         break;
                     case "registreringFra":
+                        string dateValue = (string)jp.Value;
+                        jp.Value = ChangeDateFormat(dateValue);
                         jp.Replace(new JProperty("registrationFrom", jp.Value));
                         break;
                     case "registreringsaktør":
                         jp.Replace(new JProperty("registrationActor", jp.Value));
                         break;
                     case "registreringTil":
+                        dateValue = (string)jp.Value;
+                        jp.Value = ChangeDateFormat(dateValue);
                         jp.Replace(new JProperty("registrationTo", jp.Value));
                         break;
                     case "virkningFra":
+                        dateValue = (string)jp.Value;
+                        jp.Value = ChangeDateFormat(dateValue);
                         jp.Replace(new JProperty("effectFrom", jp.Value));
                         break;
                     case "virkningsaktør":
                         jp.Replace(new JProperty("effectActor", jp.Value));
                         break;
                     case "virkningTil":
+                        dateValue = (string)jp.Value;
+                        jp.Value = ChangeDateFormat(dateValue);
                         jp.Replace(new JProperty("effectTo", jp.Value));
                         break;
                     case "adressebetegnelse":
@@ -325,7 +426,19 @@ namespace Work
                         break;
                     case "postnummerinddeling":
                         jp.Replace(new JProperty("postalCodeDistrict", jp.Value));
-                        break;         
+                        break;
+                    /*      
+                    case "position":
+                        string value =  (string)jp.Value;
+                        WKTReader reader = new WKTReader();
+                        var pointvalue = reader.Read(value);
+                        var wkb = new WKBWriter();
+                        var coord = wkb.Write(pointvalue);
+                        var str = System.Text.Encoding.Default.GetString(coord);
+                        jp.Value = str;
+                        jp.Replace(new JProperty("position",jp.Value));
+                        break;
+                    */
                     default:
                         //Console.WriteLine("wrong input");
                         break;
@@ -333,12 +446,12 @@ namespace Work
                 //Console.WriteLine(jp.Name);
                 //if (jp.Name == "forretningshændelse")
                 //{
-                  //  string name = "Events";
-                    //jp.Replace(new JProperty(name, jp.Value));
+                //  string name = "Events";
+                //jp.Replace(new JProperty(name, jp.Value));
                 //}
                 //Console.WriteLine(jo.ToString());
             }
-            var obj = JsonConvert.SerializeObject(jo,Formatting.Indented);
+            var obj = JsonConvert.SerializeObject(jo, Formatting.Indented);
             return obj;
 
         }
