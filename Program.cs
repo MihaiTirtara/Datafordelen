@@ -26,8 +26,7 @@ namespace Work
         {
 
             ProcessGeoDirectory("/home/mehigh/Geo");
-            //await AdressToKafka();
-            //ChangeDateFormat("2020-04-02T10:04:26.979884+02:00");
+            await AdressToKafka();
 
         }
 
@@ -36,7 +35,7 @@ namespace Work
             string[] fileEntries = Directory.GetFiles(targetDirectory);
             foreach (string filenName in fileEntries)
             {
-                //Console.WriteLine(filenName);
+                
                 JsonToKafka(filenName);
             }
         }
@@ -427,29 +426,10 @@ namespace Work
                     case "postnummerinddeling":
                         jp.Replace(new JProperty("postalCodeDistrict", jp.Value));
                         break;
-                    /*      
-                    case "position":
-                        string value =  (string)jp.Value;
-                        WKTReader reader = new WKTReader();
-                        var pointvalue = reader.Read(value);
-                        var wkb = new WKBWriter();
-                        var coord = wkb.Write(pointvalue);
-                        var str = System.Text.Encoding.Default.GetString(coord);
-                        jp.Value = str;
-                        jp.Replace(new JProperty("position",jp.Value));
-                        break;
-                    */
                     default:
                         //Console.WriteLine("wrong input");
                         break;
                 }
-                //Console.WriteLine(jp.Name);
-                //if (jp.Name == "forretningshændelse")
-                //{
-                //  string name = "Events";
-                //jp.Replace(new JProperty(name, jp.Value));
-                //}
-                //Console.WriteLine(jo.ToString());
             }
             var obj = JsonConvert.SerializeObject(jo, Formatting.Indented);
             return obj;
