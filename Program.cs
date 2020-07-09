@@ -1,18 +1,13 @@
 ﻿using System;
 using Newtonsoft.Json;
 using System.IO;
-using MongoDB.Bson;
-using MongoDB.Bson.Serialization;
-using MongoDB.Driver;
 using System.Threading.Tasks;
 using System.Collections.Generic;
 using System.Linq;
 using Confluent.Kafka;
 using Newtonsoft.Json.Linq;
-using System.Globalization;
-using System.Text.RegularExpressions;
-using NetTopologySuite.Geometries;
-using NetTopologySuite.IO;
+
+
 
 
 namespace Work
@@ -20,24 +15,28 @@ namespace Work
     class Program
     {
 
-        private static List<string> husnummers = new List<string>();
 
         public static async Task Main(string[] args)
         {
 
             ProcessGeoDirectory("/home/mehigh/Geo");
-            await AdressToKafka();
+            //await AdressToKafka();
 
         }
 
         public static void ProcessGeoDirectory(string targetDirectory)
         {
-            string[] fileEntries = Directory.GetFiles(targetDirectory);
-            foreach (string filenName in fileEntries)
+            List<String> fileEntries = Directory.GetFiles(targetDirectory).ToList();
+            List<String> geoFilter = new List<string>(){"trae","bygning"};
+            List<String> filtered = new List<String>();
+            var result = fileEntries.Where(a => geoFilter.Any(b => a.Contains(b))).ToList();
+            
+            foreach (string filenName in result)
             {
-                
+
                 JsonToKafka(filenName);
             }
+            
         }
 
         public static string ChangeDateFormat(string dateString)
