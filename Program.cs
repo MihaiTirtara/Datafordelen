@@ -19,8 +19,8 @@ namespace Work
         public static async Task Main(string[] args)
         {
 
+            await AdressToKafka();
             ProcessGeoDirectory("/home/mehigh/Geo");
-            //await AdressToKafka();
 
         }
 

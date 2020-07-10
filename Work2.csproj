@@ -8,9 +8,11 @@
   <ItemGroup>
     <PackageReference Include="Confluent.Kafka" Version="1.4.2" />
     <PackageReference Include="Confluent.SchemaRegistry.Serdes.Json" Version="1.4.2" />
+    <PackageReference Include="FluentFTP" Version="32.4.3" />
     <PackageReference Include="MongoDB.Driver" Version="2.10" />
     <PackageReference Include="NetTopologySuite" Version="2.0.0" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
+    <PackageReference Include="System.ServiceModel.Syndication" Version="5.0.0-preview.6.20305.6" />
   </ItemGroup>
 
 </Project>
