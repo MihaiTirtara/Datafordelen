@@ -19,9 +19,12 @@ namespace Work
         public static async Task Main(string[] args)
         {
 
-            await AdressToKafka();
-            ProcessGeoDirectory("/home/mehigh/Geo");
-
+            //await AdressToKafka("/home/mehigh/Adress/DAR.json");
+            //ProcessGeoDirectory("/home/mehigh/Geo");
+            FTPClient client = new FTPClient();
+            //await client.getFileFtp("ftp3.datafordeler.dk","JFOWRLSDKM","sWRbn2M8y2tH!","/home/mehigh/ftptrials/");
+            //client.UnzipFile(@"/home/mehigh/ftptrials/",@"/home/mehigh/ftptrials/");
+            await ProcessLatestAdresses("/home/mehigh/ftptrials/","/home/mehigh/newftp");
         }
 
         public static void ProcessGeoDirectory(string targetDirectory)
@@ -37,6 +40,38 @@ namespace Work
                 JsonToKafka(filenName);
             }
             
+        }
+
+        public static async Task  ProcessLatestAdresses(string sourceDirectory, string destinationDirectory)
+        {
+            DirectoryInfo destinfo = new DirectoryInfo(destinationDirectory);
+            if(destinfo.Exists == false)
+            {
+                Directory.CreateDirectory(destinationDirectory);
+            }
+            DirectoryInfo sourceinfo = new DirectoryInfo(sourceDirectory);
+            DirectoryInfo [] dirs = sourceinfo.GetDirectories();
+
+            List<String> fileEntries = Directory.GetFiles(sourceDirectory).ToList();
+            foreach (string filename in fileEntries)
+            {
+                if (!filename.Contains("Metadata"))
+                {
+                    await AdressToKafka(filename);
+                    string file = Path.GetFileName(filename);
+                    string destFile = Path.Combine(destinationDirectory,file);
+                    File.Move(filename, destFile);
+                    Console.WriteLine("File moved in new directory");
+                }
+                else
+                {
+                    string file = Path.GetFileName(filename);
+                    string destFile = Path.Combine(destinationDirectory,file);
+                    File.Move(filename, destFile);
+                }
+            }
+            //List<String> fileEntries = Directory.GetFiles(rootDirectory).ToList();
+
         }
 
         public static string ChangeDateFormat(string dateString)
@@ -64,9 +99,9 @@ namespace Work
             return String.Empty;
         }
 
-        public static async Task AdressToKafka()
+         public static async Task AdressToKafka(string filename)
         {
-            using (FileStream fs = new FileStream("/home/mehigh/Adress/DAR.json", FileMode.Open, FileAccess.Read))
+            using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
             using (StreamReader sr = new StreamReader(fs))
             using (JsonTextReader reader = new JsonTextReader(sr))
             {
@@ -74,8 +109,8 @@ namespace Work
                 {
                     // Advance the reader to start of first array, 
                     // which should be value of the "Stores" property
-                    var listName = string.Empty;
-                    while (reader.TokenType != JsonToken.StartArray)
+                    var listName = "AdresseList";
+                    if (reader.TokenType != JsonToken.StartArray)
                     {
                         if (reader.TokenType == JsonToken.PropertyName)
                         {

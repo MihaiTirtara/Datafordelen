@@ -6,6 +6,9 @@ using System.IO;
 using FluentFTP;
 using System.Threading.Tasks;
 using System.IO.Compression;
+using System.Linq;
+using System.Collections.Generic;
+
 public class FTPClient
 {
     public FTPClient()
@@ -13,7 +16,7 @@ public class FTPClient
 
     }
 
-    public static void getAdressInitialLoad(String url, String filepath)
+    public  void getAdressInitialLoad(String url, String filepath)
     {
         String downloadLink = String.Empty;
         String[] feedwords = null;
@@ -39,7 +42,7 @@ public class FTPClient
 
     }
 
-    public static async Task getFileFtp(string host, string userName, string password, string path)
+    public  async Task getFileFtp(string host, string userName, string password, string path)
     {
         FtpClient client = new FtpClient(host);
 
@@ -49,7 +52,7 @@ public class FTPClient
         await client.ConnectAsync();
 
 
-        // get a list of files and directories in the "/htdocs" folder
+        // get a list of files and directories in the "/" folder
         foreach (FtpListItem item in await client.GetListingAsync("/"))
         {
 
@@ -72,9 +75,23 @@ public class FTPClient
         await client.DisconnectAsync();
     }
 
-    public static void UnzipFile(String path, String extractPath)
+    public  void UnzipFile(String path, String extractPath)
     {
-        ZipFile.ExtractToDirectory(path, extractPath);
+        List<String> fileEntries = Directory.GetFiles(path).ToList();
+        foreach(var file in fileEntries)
+        {
+            if(file.Contains(".zip"))
+            {
+                ZipFile.ExtractToDirectory(file, extractPath);
+                File.Delete(file);
+            }
+            else
+            {
+                Console.WriteLine("File already unzipped");
+            }
+         
+
+        }
     }
 
 } 
