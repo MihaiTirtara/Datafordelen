@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Linq;
 using Confluent.Kafka;
 using Newtonsoft.Json.Linq;
+using System.Diagnostics;
 
 
 
@@ -14,27 +15,43 @@ namespace Work
 {
     class Program
     {
+         static FTPClient  client = new FTPClient();
 
 
         public static async Task Main(string[] args)
         {
-
-            //await AdressToKafka("/home/mehigh/Adress/DAR.json");
-            //ProcessGeoDirectory("/home/mehigh/Geo");
-            FTPClient client = new FTPClient();
-            //await client.getFileFtp("ftp3.datafordeler.dk","JFOWRLSDKM","sWRbn2M8y2tH!","/home/mehigh/ftptrials/");
-            //client.UnzipFile(@"/home/mehigh/ftptrials/",@"/home/mehigh/ftptrials/");
-            //await ProcessLatestAdresses("/home/mehigh/ftptrials/","/home/mehigh/newftp");
-            string lastFolderName = new DirectoryInfo("/home/mehigh/Geo").Name;
-            Console.WriteLine(lastFolderName);
+            await getinitialAdressData();
+            await getLatestGeoData();
+            await getLatestAdressData();
 
         }
 
-        public static void ProcessGeoDirectory(string sourceDirectory, string destinationDirectory)
+        public static async Task getinitialAdressData()
         {
+            client.getAdressInitialLoad("https://selfservice.datafordeler.dk/filedownloads/626/334",@"/home/mehigh/ftptrials/adress.zip");
+            client.UnzipFile(@"/home/mehigh/ftptrials/",@"/home/mehigh/ftptrials/");
+            await ProcessLatestAdresses("/home/mehigh/ftptrials/","/home/mehigh/newftp");
 
+        }
+
+        public static async Task getLatestAdressData()
+        {
+            await client.getFileFtp("ftp3.datafordeler.dk","JFOWRLSDKM","sWRbn2M8y2tH!","/home/mehigh/ftptrials/");
+            client.UnzipFile(@"/home/mehigh/ftptrials/",@"/home/mehigh/ftptrials/");
+            await ProcessLatestAdresses("/home/mehigh/ftptrials/","/home/mehigh/newftp");
+        }
+
+        public static async Task getLatestGeoData()
+        {
+            await client.getFileFtp("ftp3.datafordeler.dk","PCVZLGPTJE","sWRbn2M8y2tH!","/home/mehigh/geo/");
+            client.UnzipFile(@"/home/mehigh/geo/",@"/home/mehigh/geo/");
+            convertToGeojson();
+            ProcessGeoDirectory(@"/home/mehigh/geo/",@"/home/mehigh/newgeo/", new List<string>(){"trae","bygning,chikane,bygvaerk,erhverv,systemlinje,vejkant,vejmidte"});
+        }
+
+        public static void ProcessGeoDirectory(string sourceDirectory, string destinationDirectory,List<String> geoFilter)
+        {
             List<String> fileEntries = Directory.GetFiles(sourceDirectory).ToList();
-            List<String> geoFilter = new List<string>(){"trae","bygning"};
             List<String> filtered = new List<String>();
             var result = fileEntries.Where(a => geoFilter.Any(b => a.Contains(b))).ToList();
             
@@ -47,6 +64,19 @@ namespace Work
             string lastFolderName = new DirectoryInfo(sourceDirectory).Name;
             Directory.Move(sourceDirectory,destinationDirectory+lastFolderName);
             
+        }
+
+        public static void convertToGeojson()
+        {
+            ProcessStartInfo startInfo = new ProcessStartInfo()
+            {
+                FileName = @"/home/mehigh/confluentKafka/convert_script.sh",
+            };
+            Process proc = new Process()
+            {
+                StartInfo = startInfo,
+            };
+            proc.Start();
         }
 
         public static async Task  ProcessLatestAdresses(string sourceDirectory, string destinationDirectory)
