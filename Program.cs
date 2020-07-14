@@ -24,12 +24,16 @@ namespace Work
             FTPClient client = new FTPClient();
             //await client.getFileFtp("ftp3.datafordeler.dk","JFOWRLSDKM","sWRbn2M8y2tH!","/home/mehigh/ftptrials/");
             //client.UnzipFile(@"/home/mehigh/ftptrials/",@"/home/mehigh/ftptrials/");
-            await ProcessLatestAdresses("/home/mehigh/ftptrials/","/home/mehigh/newftp");
+            //await ProcessLatestAdresses("/home/mehigh/ftptrials/","/home/mehigh/newftp");
+            string lastFolderName = new DirectoryInfo("/home/mehigh/Geo").Name;
+            Console.WriteLine(lastFolderName);
+
         }
 
-        public static void ProcessGeoDirectory(string targetDirectory)
+        public static void ProcessGeoDirectory(string sourceDirectory, string destinationDirectory)
         {
-            List<String> fileEntries = Directory.GetFiles(targetDirectory).ToList();
+
+            List<String> fileEntries = Directory.GetFiles(sourceDirectory).ToList();
             List<String> geoFilter = new List<string>(){"trae","bygning"};
             List<String> filtered = new List<String>();
             var result = fileEntries.Where(a => geoFilter.Any(b => a.Contains(b))).ToList();
@@ -38,7 +42,10 @@ namespace Work
             {
 
                 JsonToKafka(filenName);
+
             }
+            string lastFolderName = new DirectoryInfo(sourceDirectory).Name;
+            Directory.Move(sourceDirectory,destinationDirectory+lastFolderName);
             
         }
 
