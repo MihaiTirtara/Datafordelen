@@ -156,5 +156,5 @@ After processing the data into ksql the data is added into a relational database
        "transforms.flatten.type": "org.apache.kafka.connect.transforms.Flatten$Value",
        "pk.fields": "MESSAGE_KEY",
        "pk.mode": "record_key"
-  }
-}
+      }
+    }
