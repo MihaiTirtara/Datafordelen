@@ -92,23 +92,23 @@ Furthermore before adding the adresses into a topic the fields are translated fr
 
 In the case of the geographic data, first the files have to be download from an ftp server using the account created on the datafordeler website. The files are in the GML format but the system uses GeoJson for that reason the files have to be converted. Afterwards the data are added into the specific Kafka topic, furthermore you also have the option to pass a string array to select only the data that you are interested in. 
 #
-    public static void ProcessGeoDirectory(string sourceDirectory, string destinationDirectory,List<String> geoFilter)
+     public static void ProcessGeoDirectory(string sourceDirectory, string destinationDirectory,List<String> geoFilter)
         {
             List<String> fileEntries = Directory.GetFiles(sourceDirectory).ToList();
             List<String> filtered = new List<String>();
             var result = fileEntries.Where(a => geoFilter.Any(b => a.Contains(b))).ToList();
+          
             
-            foreach (string filenName in result)
+            foreach (string fileName in result)
             {
-
-                JsonToKafka(filenName);
-
+                Console.WriteLine(fileName);
+                var fileNoExtension = Path.GetFileNameWithoutExtension(fileName);
+                var dest = Path.Combine(destinationDirectory,fileNoExtension);
+                JsonToKafka(fileName);
+                Directory.Move(fileName,dest);
             }
-            string lastFolderName = new DirectoryInfo(sourceDirectory).Name;
-            Directory.Move(sourceDirectory,destinationDirectory+lastFolderName);
             
         }
-
 3.  Add the latest adress data  
 Similarly to the previous steps to get the latest adress data we first dowload the zip file from an ftp server and then unzip  it and add it into the specific Kafka topic.  
 #
