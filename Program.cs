@@ -44,9 +44,9 @@ namespace Work
         public static async Task getLatestGeoData()
         {
             await client.getFileFtp("ftp3.datafordeler.dk","PCVZLGPTJE","sWRbn2M8y2tH!","/home/mehigh/geo/");
-            client.UnzipFile(@"/home/mehigh/geo/",@"/home/mehigh/geo/");
+            client.UnzipFile(@"/home/mehigh/geo/",@"/home/mehigh/geo/geogml");
             convertToGeojson();
-            ProcessGeoDirectory(@"/home/mehigh/geo/",@"/home/mehigh/newgeo/", new List<string>(){"trae","bygning,chikane,bygvaerk,erhverv,systemlinje,vejkant,vejmidte"});
+            ProcessGeoDirectory(@"/home/mehigh/geo/",@"/home/mehigh/NewGeo/", new List<string>(){"trae","bygning","chikane","bygvaerk","erhverv","systemlinje","vejkant","vejmidte"});
         }
 
         public static void ProcessGeoDirectory(string sourceDirectory, string destinationDirectory,List<String> geoFilter)
@@ -55,14 +55,14 @@ namespace Work
             List<String> filtered = new List<String>();
             var result = fileEntries.Where(a => geoFilter.Any(b => a.Contains(b))).ToList();
             
-            foreach (string filenName in result)
+            foreach (string fileName in result)
             {
-
-                JsonToKafka(filenName);
-
+                Console.WriteLine(fileName);
+                var fileNoExtension = Path.GetFileNameWithoutExtension(fileName);
+                var dest = Path.Combine(destinationDirectory,fileNoExtension);
+                JsonToKafka(fileName);
+                Directory.Move(fileName,dest);
             }
-            string lastFolderName = new DirectoryInfo(sourceDirectory).Name;
-            Directory.Move(sourceDirectory,destinationDirectory+lastFolderName);
             
         }
 
@@ -202,7 +202,8 @@ namespace Work
             using (var streamReader = new StreamReader(s))
             {
               //Console.WriteLine(filename);
-             var topicname = Path.GetFileNameWithoutExtension(filename);
+             var file = Path.GetFileNameWithoutExtension(filename).Split("."); 
+             var topicname = file[1];
              
                 using (var reader = new Newtonsoft.Json.JsonTextReader(streamReader))
                 {
