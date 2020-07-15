@@ -20,9 +20,10 @@ namespace Work
 
         public static async Task Main(string[] args)
         {
-            await getinitialAdressData();
-            await getLatestGeoData();
-            await getLatestAdressData();
+            //await getinitialAdressData();
+            //await getLatestGeoData();
+            //await getLatestAdressData();
+            IsWithin(25,21,27);
 
         }
 
@@ -43,9 +44,9 @@ namespace Work
 
         public static async Task getLatestGeoData()
         {
-            await client.getFileFtp("ftp3.datafordeler.dk","PCVZLGPTJE","sWRbn2M8y2tH!","/home/mehigh/geo/");
-            client.UnzipFile(@"/home/mehigh/geo/",@"/home/mehigh/geo/geogml");
-            convertToGeojson();
+            //await client.getFileFtp("ftp3.datafordeler.dk","PCVZLGPTJE","sWRbn2M8y2tH!","/home/mehigh/geo/");
+            //client.UnzipFile(@"/home/mehigh/geo/",@"/home/mehigh/geo/geogml");
+            //convertToGeojson();
             ProcessGeoDirectory(@"/home/mehigh/geo/",@"/home/mehigh/NewGeo/", new List<string>(){"trae","bygning","chikane","bygvaerk","erhverv","systemlinje","vejkant","vejmidte"});
         }
 
@@ -61,7 +62,7 @@ namespace Work
                 var fileNoExtension = Path.GetFileNameWithoutExtension(fileName);
                 var dest = Path.Combine(destinationDirectory,fileNoExtension);
                 JsonToKafka(fileName);
-                Directory.Move(fileName,dest);
+                File.Move(fileName,dest);
             }
             
         }
@@ -308,7 +309,26 @@ namespace Work
                     JObject o = JObject.Parse(document);
                     //Console.Write(o);
                     id = o["properties"]["gml_id"].ToString();
-
+                    var ar = o["geometry"]["coordinates"].ToList();
+                    foreach(var a in ar)
+                    {
+                        foreach(var b in a)
+                        {
+                            foreach(var c in b)
+                            {
+                                //Console.WriteLine(c);
+                                //Console.WriteLine("one object");
+                                int xvalue = (int)c[0];
+                                int yvalue = (int)c[1];
+                                if(IsWithin(xvalue,538913,568605) && IsWithin(yvalue,6182387,6199152))
+                                {
+                                    Console.WriteLine("hey");
+                                }
+                            }
+                        }
+                        
+                    }
+                    /*
                     try
                     {
                         p.Produce(topicname, new Message<String, string> { Value = document, Key = id });
@@ -317,6 +337,7 @@ namespace Work
                     {
                         Console.WriteLine($"Delivery failed: {e.Error.Reason}");
                     }
+                    */
 
                 }
                 p.Flush(TimeSpan.FromSeconds(10));
@@ -325,7 +346,12 @@ namespace Work
             }
         }
 
-
+        public static bool IsWithin(int value, int minimum, int maximum)
+        {
+               Console.WriteLine(value >= minimum && value <= maximum);
+            return value >= minimum && value <= maximum;
+         
+        }
         public static string ChangeAdressNames(JObject jo)
         {
             //Console.WriteLine("inside function");

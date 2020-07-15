@@ -7,7 +7,13 @@ create table "ACCESSADDRESS" ("MESSAGE_KEY" text PRIMARY KEY ,"H_ID_LOKALID" tex
 create table "ADRESSELIST" ("MESSAGE_KEY" text PRIMARY KEY ,"ID_LOKALID" text, "UNITADDRESSDESCRIPTION" text, "DOOR" text, "FLOOR" text,"HOUSENUMBER" text);
 create table "ROADNAMES" ("MESSAGE_KEY" text PRIMARY KEY ,"ID_LOKALID" text, "ROADNAME" text, "MUNICIPALITYADMINISTRATION" text, "ROADREGISTRATIONROADLINE" text, "GEO" geometry);
 CREATE TABLE "ROADKOMMUNE" ("MESSAGE_KEY" text PRIMARY KEY ,"ID_LOKALID" text , "MUNICIPALITY" text,"ROADCODE" text, "NAMEDROAD" text);
-CREATE TABLE "POSTALAREA"("MESSAGE_KEY" text PRIMARY KEY ,"ID_LOKALID" text, "NAVN" text, "POSTNR" text, "POSTALCODEDISTRICT" text);	
+CREATE TABLE "POSTALAREA"("MESSAGE_KEY" text PRIMARY KEY ,"ID_LOKALID" text, "NAVN" text, "POSTNR" text, "POSTALCODEDISTRICT" text);
+
+/* Create spatial index for adress tables */
+CREATE INDEX access_address_index
+    ON public."ACCESSADDRESS" USING gist ("GEO");
+CREATE INDEX roadnames_index
+    ON public."ROADNAMES" USING gist ("GEO");	
 
 /* Create geo tables */ 
 
@@ -27,6 +33,26 @@ Create table "SYSTEMLINE"("MESSAGE_KEY" text PRIMARY KEY ,"properties.GML_ID" te
 Create table "ROADEDGE"("MESSAGE_KEY" text PRIMARY KEY ,"properties.GML_ID" text , "properties.ID_LOKALID" text ,"GEOMETRY" text, "GEO" geometry);
 
 Create table "ROADMID"("MESSAGE_KEY" text PRIMARY KEY ,"properties.GML_ID" text , "properties.ID_LOKALID" text ,"GEOMETRY" text, "GEO" geometry);
+
+/* Create spatial index for geographical data tables */
+CREATE INDEX building_index
+    ON public."BUILDING" USING gist ("GEO");
+CREATE INDEX chicane_index
+    ON public."CHICANE" USING gist ("GEO");
+CREATE INDEX construction_index
+    ON public."CONSTRUCTION" USING gist ("GEO");
+CREATE INDEX tree_index
+    ON public."TREE" USING gist ("GEO");
+CREATE INDEX commercial_index
+    ON public."COMMERCIAL" USING gist ("GEO");
+CREATE INDEX systemline_index
+    ON public."SYSTEMLINE" USING gist ("GEO");
+CREATE INDEX roadedge_index
+    ON public."ROADEDGE" USING gist ("GEO");
+CREATE INDEX roadmid_index
+    ON public."ROADMID" USING gist ("GEO");
+
+
 
 /* Create triggers to convert from wkt to geometry */
 
