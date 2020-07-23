@@ -65,6 +65,7 @@ services:
     depends_on:
       - broker
       - schema-registry
+      - zookeeper
     ports:
       - 8083:8083
     environment:
@@ -105,7 +106,7 @@ services:
         #
         echo "Downloading JDBC driver"
         cd /usr/share/confluent-hub-components/confluentinc-kafka-connect-jdbc
-        curl https://cdn.mysql.com/Downloads/Connector-J/mysql-connector-java-8.0.19.tar.gz | tar xz 
+        curl https://repo1.maven.org/maven2/com/microsoft/sqlserver/mssql-jdbc/8.3.1.jre14-preview/mssql-jdbc-8.3.1.jre14-preview.jar --output mssql-jdbc-8.3.1.jre14-preview.jar
         #
         echo "Launching Kafka Connect worker"
         /etc/confluent/docker/run & 
@@ -149,6 +150,43 @@ services:
      - MYSQL_PASSWORD=asgard
     volumes:
      - ./data/mysql:/docker-entrypoint-initdb.d/
+
+  mssql:
+    # *-----------------------------*
+    # To connect to the DB: 
+    #   docker-compose exec mssql bash -c '/opt/mssql-tools/bin/sqlcmd -l 30 -S localhost -U sa -P $SA_PASSWORD'
+    # *-----------------------------*
+    image: mcr.microsoft.com/mssql/server:2017-latest
+    container_name: mssql
+    environment: 
+      - SA_PASSWORD=Admin123
+      - ACCEPT_EULA=Y
+    volumes:
+     - ./data/mssql:/scripts/
+    command:
+      - /bin/bash
+      - -c 
+      - |
+        # Launch MSSQL and send to background
+        /opt/mssql/bin/sqlservr &
+        # Wait for it to be available
+        echo "Waiting for MS SQL to be available ⏳"
+        /opt/mssql-tools/bin/sqlcmd -l 30 -S localhost -h-1 -V1 -U sa -P $$SA_PASSWORD -Q "SET NOCOUNT ON SELECT \"YAY WE ARE UP\" , @@servername"
+        is_up=$$?
+        while [ $$is_up -ne 0 ] ; do 
+          echo -e $$(date) 
+          /opt/mssql-tools/bin/sqlcmd -l 30 -S localhost -h-1 -V1 -U sa -P $$SA_PASSWORD -Q "SET NOCOUNT ON SELECT \"YAY WE ARE UP\" , @@servername"
+          is_up=$$?
+          sleep 5 
+        done
+        # Run every script in /scripts
+        # TODO set a flag so that this is only done once on creation, 
+        #      and not every time the container runs
+        for foo in /scripts/*.sql
+          do /opt/mssql-tools/bin/sqlcmd -U sa -P $$SA_PASSWORD -l 30 -e -i $$foo
+        done
+        # So that the container doesn't shut down, sleep this thread
+        sleep infinity
 
   postgres:
     # *-----------------------------*

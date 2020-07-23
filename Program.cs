@@ -7,6 +7,10 @@ using System.Linq;
 using Confluent.Kafka;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
+using GeoAPI.Geometries;
+using NetTopologySuite.Geometries;
+using NetTopologySuite.Operation.Polygonize;
+using NetTopologySuite.IO;
 
 
 
@@ -20,18 +24,17 @@ namespace Work
 
         public static async Task Main(string[] args)
         {
-            //await getinitialAdressData();
+            await getinitialAdressData();
             //await getLatestGeoData();
             //await getLatestAdressData();
-            IsWithin(25,21,27);
 
         }
 
         public static async Task getinitialAdressData()
         {
-            client.getAdressInitialLoad("https://selfservice.datafordeler.dk/filedownloads/626/334",@"/home/mehigh/ftptrials/adress.zip");
-            client.UnzipFile(@"/home/mehigh/ftptrials/",@"/home/mehigh/ftptrials/");
-            await ProcessLatestAdresses("/home/mehigh/ftptrials/","/home/mehigh/newftp");
+            //client.getAdressInitialLoad("https://selfservice.datafordeler.dk/filedownloads/626/334",@"/home/mehigh/ftptrials/adress.zip");
+            //client.UnzipFile(@"/home/mehigh/ftptrials/",@"/home/mehigh/ftptrials/");
+            await ProcessLatestAdresses("/home/mehigh/ftptrials/","/home/mehigh/newftp",538913, 6182387, 568605, 6199152);
 
         }
 
@@ -39,7 +42,7 @@ namespace Work
         {
             await client.getFileFtp("ftp3.datafordeler.dk","JFOWRLSDKM","sWRbn2M8y2tH!","/home/mehigh/ftptrials/");
             client.UnzipFile(@"/home/mehigh/ftptrials/",@"/home/mehigh/ftptrials/");
-            await ProcessLatestAdresses("/home/mehigh/ftptrials/","/home/mehigh/newftp");
+            await ProcessLatestAdresses("/home/mehigh/ftptrials/","/home/mehigh/newftp",538913, 6182387, 568605, 6199152);
         }
 
         public static async Task getLatestGeoData()
@@ -47,10 +50,10 @@ namespace Work
             //await client.getFileFtp("ftp3.datafordeler.dk","PCVZLGPTJE","sWRbn2M8y2tH!","/home/mehigh/geo/");
             //client.UnzipFile(@"/home/mehigh/geo/",@"/home/mehigh/geo/geogml");
             //convertToGeojson();
-            ProcessGeoDirectory(@"/home/mehigh/geo/",@"/home/mehigh/NewGeo/", new List<string>(){"trae","bygning","chikane","bygvaerk","erhverv","systemlinje","vejkant","vejmidte"});
+            ProcessGeoDirectory(@"/home/mehigh/geo/",@"/home/mehigh/NewGeo/", new List<string>(){"trae","bygning","chikane","bygvaerk","erhverv","systemlinje","vejkant"},538913,6182387,568605,6199152);
         }
 
-        public static void ProcessGeoDirectory(string sourceDirectory, string destinationDirectory,List<String> geoFilter)
+        public static void ProcessGeoDirectory(string sourceDirectory, string destinationDirectory,List<String> geoFilter,double minX,double minY,double maxX,double maxY)
         {
             List<String> fileEntries = Directory.GetFiles(sourceDirectory).ToList();
             List<String> filtered = new List<String>();
@@ -60,8 +63,8 @@ namespace Work
             {
                 Console.WriteLine(fileName);
                 var fileNoExtension = Path.GetFileNameWithoutExtension(fileName);
-                var dest = Path.Combine(destinationDirectory,fileNoExtension);
-                JsonToKafka(fileName);
+                var dest = Path.Combine(destinationDirectory,fileNoExtension + ".json");
+                JsonToKafka(fileName, minX,minY,maxX,maxY);
                 File.Move(fileName,dest);
             }
             
@@ -80,7 +83,7 @@ namespace Work
             proc.Start();
         }
 
-        public static async Task  ProcessLatestAdresses(string sourceDirectory, string destinationDirectory)
+        public static async Task  ProcessLatestAdresses(string sourceDirectory, string destinationDirectory,double minX, double minY, double maxX, double maxY)
         {
             DirectoryInfo destinfo = new DirectoryInfo(destinationDirectory);
             if(destinfo.Exists == false)
@@ -95,7 +98,7 @@ namespace Work
             {
                 if (!filename.Contains("Metadata"))
                 {
-                    await AdressToKafka(filename);
+                    await AdressToKafka(filename,minX,minY,maxX,maxY);
                     string file = Path.GetFileName(filename);
                     string destFile = Path.Combine(destinationDirectory,file);
                     File.Move(filename, destFile);
@@ -137,7 +140,7 @@ namespace Work
             return String.Empty;
         }
 
-         public static async Task AdressToKafka(string filename)
+         public static async Task AdressToKafka(string filename,double minX, double minY, double maxX, double maxY)
         {
             using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
             using (StreamReader sr = new StreamReader(fs))
@@ -176,27 +179,54 @@ namespace Work
                             if (jsonText.Count >= 100000)
                             {
 
-                                KafkaProducer(listName, jsonText);
-                                jsonText.Clear();
-                                Console.WriteLine("Wrote 100000 objects into topic");
+
+
+                                if (listName.Equals("AdressepunktList") | listName.Equals("NavngivenVejList"))
+                                {
+                                    var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
+                                    KafkaProducer(listName, boundingBatch);
+                                    boundingBatch.Clear();
+                                    jsonText.Clear();
+                                }
+                                else
+                                {
+                                    KafkaProducer(listName, jsonText);
+
+                                    jsonText.Clear();
+                                    Console.WriteLine("Wrote 100000 objects into topic");
+                                }
                             }
+                                
+                                
                         }
                     }
 
-                    KafkaProducer(listName, jsonText);
-                    jsonText.Clear();
-                    System.Console.WriteLine("The end of the world!");
+                 
+                    
+                    if (listName.Equals("AdressepunktList") | listName.Equals("NavngivenVejList"))
+                    {
+                        var boundingBatch = newfilterAdressPosition(jsonText, minX,minY,maxX,maxY);
+                        KafkaProducer(listName, boundingBatch);
+                        boundingBatch.Clear();
+                        jsonText.Clear();
+                    }
+                    else 
+                    {
+                        KafkaProducer(listName, jsonText);
+                        jsonText.Clear();
+                        System.Console.WriteLine("The end of the world!");
+                    }
                 }
             }
         }
 
 
-        public static void JsonToKafka(String filename)
+        public static void JsonToKafka(String filename, double minX,double minY, double maxX, double maxY)
         {
-            //string inputFileName = "/home/mehigh/Addresses2/Addresses2.json";
-
+            //string inputFileName = "/home/mehigh/Addresses2/Addresses2.json";)
             String jsonDoc = "";
             List<String> batch = new List<string>();
+            List<String> boundingBoxBatch = new List<string>();
 
             using (FileStream s = File.Open(filename, FileMode.Open))
 
@@ -222,17 +252,22 @@ namespace Work
                                     {
                                         if (reader.TokenType == Newtonsoft.Json.JsonToken.StartObject)
                                         {
-                                            Object obj = new Newtonsoft.Json.JsonSerializer().Deserialize(reader);
-                                            jsonDoc = Newtonsoft.Json.JsonConvert.SerializeObject(obj, Formatting.Indented);
+                                            //Object obj = new Newtonsoft.Json.JsonSerializer().Deserialize(reader);
+                                            dynamic obj = JObject.Load(reader);
+                                            jsonDoc = JsonConvert.SerializeObject(obj, Formatting.Indented);
                                             //Console.WriteLine("THis is the object" + jsonDoc);
 
-
                                         }
+                                        if(jsonDoc!=null)
+                                        {
                                         batch.Add(jsonDoc);
+                                        }
                                         //Console.WriteLine(batch.Count());
                                         if (batch.Count >= 10000)
                                         {
-                                            KafkaProducerGeo(topicname, batch);
+                                            boundingBoxBatch = filterGeoPosition(batch,minX,minY,maxX,maxY);
+                                            KafkaProducerGeo(topicname, boundingBoxBatch);
+                                            boundingBoxBatch.Clear();
                                             batch.Clear();
                                         }
                                     }
@@ -245,7 +280,9 @@ namespace Work
                             }
 
                         }
-                        KafkaProducerGeo(topicname, batch);
+                        boundingBoxBatch = filterGeoPosition(batch,minX,minY,maxX,maxY);
+                        KafkaProducerGeo(topicname, boundingBoxBatch);
+                        boundingBoxBatch.Clear();
                         batch.Clear();
 
                     }
@@ -301,57 +338,174 @@ namespace Work
                 Console.WriteLine(batch.Count());
                 i += 10000;
 
-
-                foreach (var document in batch)
+                if (batch.Count > 0)
                 {
-                    String id = String.Empty;
-
-                    JObject o = JObject.Parse(document);
-                    //Console.Write(o);
-                    id = o["properties"]["gml_id"].ToString();
-                    var ar = o["geometry"]["coordinates"].ToList();
-                    foreach(var a in ar)
+                    foreach (var document in batch)
                     {
-                        foreach(var b in a)
+                        String id = String.Empty;
+
+                        JObject o = JObject.Parse(document);
+                        //Console.Write(o);
+                        id = o["properties"]["gml_id"].ToString();
+
+                        try
                         {
-                            foreach(var c in b)
-                            {
-                                //Console.WriteLine(c);
-                                //Console.WriteLine("one object");
-                                int xvalue = (int)c[0];
-                                int yvalue = (int)c[1];
-                                if(IsWithin(xvalue,538913,568605) && IsWithin(yvalue,6182387,6199152))
-                                {
-                                    Console.WriteLine("hey");
-                                }
-                            }
+                            p.Produce(topicname, new Message<String, string> { Value = document, Key = id });
                         }
-                        
-                    }
-                    /*
-                    try
-                    {
-                        p.Produce(topicname, new Message<String, string> { Value = document, Key = id });
-                    }
-                    catch (ProduceException<Null, string> e)
-                    {
-                        Console.WriteLine($"Delivery failed: {e.Error.Reason}");
-                    }
-                    */
+                        catch (ProduceException<Null, string> e)
+                        {
+                            Console.WriteLine($"Delivery failed: {e.Error.Reason}");
+                        }
 
+
+
+
+                        p.Flush(TimeSpan.FromSeconds(10));
+                        //Console.WriteLine(topicname);
+                    }
                 }
-                p.Flush(TimeSpan.FromSeconds(10));
                 Console.WriteLine(i);
-                //Console.WriteLine(topicname);
             }
         }
 
-        public static bool IsWithin(int value, int minimum, int maximum)
+        public static bool IsWithin(double value, double minimum, double maximum)
         {
-               Console.WriteLine(value >= minimum && value <= maximum);
+            //Console.WriteLine(value >= minimum && value <= maximum);
             return value >= minimum && value <= maximum;
-         
+
         }
+
+        public static List<string> filterGeoPosition(List<String> batch, double minX, double minY, double maxX, double maxY)
+        {
+            List<String> filteredBatch = new List<string>();
+            foreach (var document in batch)
+            {
+                var jo = JObject.Parse(document);
+                var ar = jo["geometry"]["coordinates"].ToList();
+                var type = jo["geometry"]["type"].ToString();
+
+                if (type == "MultiPoint")
+                {
+                    foreach (var a in ar)
+                    {
+                        double xvalue = (double)a[0];
+                        double yvalue = (double)a[1];
+                        if (IsWithin(xvalue, minX, maxX) & IsWithin(yvalue, minY, maxY))
+                        {
+                            //Console.WriteLine("hey multipoint");
+                            var obj = JsonConvert.SerializeObject(jo, Formatting.Indented);
+                            filteredBatch.Add(obj);
+                            //Console.WriteLine(obj);
+                        }
+                    }
+                }
+                else if (type == "MultiLineString")
+                {
+                    foreach (var a in ar)
+                    {
+                        //Console.WriteLine(a.ToString());
+                        foreach (var b in a)
+                        {
+                            double xvalue = (double)b[0];
+                            double yvalue = (double)b[1];
+                            if (IsWithin(xvalue, minX, maxX) & IsWithin(yvalue, minY, maxY))
+                            {
+                                //Console.WriteLine("hey multiline");
+                                var obj = JsonConvert.SerializeObject(jo, Formatting.Indented);
+                                filteredBatch.Add(obj);
+                                //Console.WriteLine(obj);
+                            }
+                            //Console.WriteLine(b.ToString());
+                        }
+                    }
+
+                }
+                else
+                {
+                    foreach (var a in ar)
+                    {
+                        //Console.WriteLine(a.ToString());
+                        foreach (var b in a)
+                        {
+                            //Console.WriteLine(b.ToString());
+                            foreach (var c in b)
+                            {
+                                //Console.WriteLine(c);
+                                //Console.WriteLine("one object");
+                                //Console.WriteLine(c.ToString());
+                                double xvalue = (double)c[0];
+                                double yvalue = (double)c[1];
+                                if (IsWithin(xvalue, minX, maxX) & IsWithin(yvalue, minY, maxY))
+                                {
+                                    //Console.WriteLine("hey multipolygon");
+                                    var obj = JsonConvert.SerializeObject(jo, Formatting.Indented);
+                                    filteredBatch.Add(obj);
+                                    //Console.WriteLine(obj);
+                                }
+
+                            }
+                        }
+                    }
+                }
+            }
+            return filteredBatch;
+
+        }
+
+        public static List<String> newfilterAdressPosition(List<String> batch, double minX, double minY, double maxX, double maxY)
+        {
+
+            List<String> filteredBatch = new List<string>();
+            GeometryFactory geometryFactory = new GeometryFactory();
+            List<Geometry> line;
+            Geometry point;
+            WKTReader rdr = new WKTReader(geometryFactory);
+            var boundingBox = new NetTopologySuite.Geometries.Envelope(minX, maxX, minY, maxY);
+            foreach (var document in batch)
+            {
+                var jo = JObject.Parse(document);
+                foreach (JProperty jp in jo.Properties().ToList())
+                {
+                    if (jp.Name == "position")
+                    {
+                        point = rdr.Read(jp.Value.ToString());
+                        if (boundingBox.Intersects(point.EnvelopeInternal))
+                        {
+                            filteredBatch.Add(document);
+                        }
+                    }
+                    else if (jp.Name == "roadRegistrationRoadLine")
+                    {
+                        while (jp.Value != null)
+                        {
+                            try
+                            {
+                                var list = rdr.Read(jp.Value.ToString()).NumGeometries;
+                                //Console.WriteLine("This is the number of geometries" + list);
+                                for (int i = 0; i < list; i++)
+                                {
+                                    //Console.WriteLine("This is the current number" + i);
+                                    var obj = rdr.Read(jp.Value.ToString()).GetGeometryN(i);
+                                    //Console.WriteLine(obj.EnvelopeInternal);
+                                    if (boundingBox.Intersects(obj.EnvelopeInternal))
+                                    {
+                                        filteredBatch.Add(document);
+                                    }
+                                }
+                                //Console.WriteLine("The number of objects is " + list);
+                            }
+                            catch (EndOfStreamException e)
+                            {
+                                Console.WriteLine("Error writing data: {0}.", e.GetType().Name);
+                            }
+                        }
+                    }
+                }
+            }
+            Console.WriteLine(filteredBatch.Count);
+            return filteredBatch;
+        }
+
         public static string ChangeAdressNames(JObject jo)
         {
             //Console.WriteLine("inside function");
