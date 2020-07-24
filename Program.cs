@@ -479,19 +479,44 @@ namespace Work
                     {
                         //while (jp.Value != null)
                         //{
-                            try
+                        if (jp.Value == null)
+                        {
+                            if (jp.Name == "roadRegistrationArea")
                             {
-                                line = rdr.Read(jp.Value.ToString());
-                                if(boundingBox.Intersects(line.EnvelopeInternal))
+                                var polygon = rdr.Read(jp.Value.ToString());
+                                {
+                                    if (boundingBox.Intersects(polygon.EnvelopeInternal))
+                                    {
+                                        filteredBatch.Add(document);
+                                    }
+                                }
+                            }
+                            else if (jp.Name == "roadRegistrationRoadConnectionPoints")
+                            {
+                                var multipoint = rdr.Read(jp.Value.ToString());
+
+
+                                if (boundingBox.Intersects(multipoint.EnvelopeInternal))
                                 {
                                     filteredBatch.Add(document);
                                 }
+
                             }
-                            catch (NetTopologySuite.IO.ParseException e)
+                        }
+                        try
+                        {
+                            line = rdr.Read(jp.Value.ToString());
+                            if (boundingBox.Intersects(line.EnvelopeInternal))
                             {
-                                Console.WriteLine("Error writing data: {0}.", e.GetType().Name);
-                                Console.WriteLine(document);
+                                filteredBatch.Add(document);
                             }
+                        }
+                        catch (NetTopologySuite.IO.ParseException e)
+                        {
+                            Console.WriteLine("Error writing data: {0}.", e.GetType().Name);
+                            Console.WriteLine(document);
+                            break;
+                        }
                         //}
                     }
                 }
@@ -658,7 +683,7 @@ namespace Work
                         jp.Replace(new JProperty("roadRegistrationRoadLine", jp.Value));
                         break;
                     case "vejnavnebeliggenhed_vejnavneområde":
-                        jp.Replace(new JProperty("roadRegistrationRoadAread", jp.Value));
+                        jp.Replace(new JProperty("roadRegistrationRoadArea", jp.Value));
                         break;
                     case "vejnavnebeliggenhed_vejtilslutningspunkter":
                         jp.Replace(new JProperty("roadRegistrationRoadConnectionPoints", jp.Value));
