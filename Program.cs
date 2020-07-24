@@ -187,6 +187,7 @@ namespace Work
                                     KafkaProducer(listName, boundingBatch);
                                     boundingBatch.Clear();
                                     jsonText.Clear();
+                                    Console.WriteLine("Wrote 100000 objects into topic");
                                 }
                                 else
                                 {
@@ -196,21 +197,21 @@ namespace Work
                                     Console.WriteLine("Wrote 100000 objects into topic");
                                 }
                             }
-                                
-                                
+
+
                         }
                     }
 
-                 
-                    
+
                     if (listName.Equals("AdressepunktList") | listName.Equals("NavngivenVejList"))
                     {
-                        var boundingBatch = newfilterAdressPosition(jsonText, minX,minY,maxX,maxY);
+                        var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
                         KafkaProducer(listName, boundingBatch);
                         boundingBatch.Clear();
                         jsonText.Clear();
+                        
                     }
-                    else 
+                    else
                     {
                         KafkaProducer(listName, jsonText);
                         jsonText.Clear();
@@ -457,7 +458,7 @@ namespace Work
 
             List<String> filteredBatch = new List<string>();
             GeometryFactory geometryFactory = new GeometryFactory();
-            List<Geometry> line;
+            Geometry line;
             Geometry point;
             WKTReader rdr = new WKTReader(geometryFactory);
             var boundingBox = new NetTopologySuite.Geometries.Envelope(minX, maxX, minY, maxY);
@@ -476,29 +477,22 @@ namespace Work
                     }
                     else if (jp.Name == "roadRegistrationRoadLine")
                     {
-                        while (jp.Value != null)
-                        {
+                        //while (jp.Value != null)
+                        //{
                             try
                             {
-                                var list = rdr.Read(jp.Value.ToString()).NumGeometries;
-                                //Console.WriteLine("This is the number of geometries" + list);
-                                for (int i = 0; i < list; i++)
+                                line = rdr.Read(jp.Value.ToString());
+                                if(boundingBox.Intersects(line.EnvelopeInternal))
                                 {
-                                    //Console.WriteLine("This is the current number" + i);
-                                    var obj = rdr.Read(jp.Value.ToString()).GetGeometryN(i);
-                                    //Console.WriteLine(obj.EnvelopeInternal);
-                                    if (boundingBox.Intersects(obj.EnvelopeInternal))
-                                    {
-                                        filteredBatch.Add(document);
-                                    }
+                                    filteredBatch.Add(document);
                                 }
-                                //Console.WriteLine("The number of objects is " + list);
                             }
-                            catch (EndOfStreamException e)
+                            catch (NetTopologySuite.IO.ParseException e)
                             {
                                 Console.WriteLine("Error writing data: {0}.", e.GetType().Name);
+                                Console.WriteLine(document);
                             }
-                        }
+                        //}
                     }
                 }
             }
