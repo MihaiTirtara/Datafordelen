@@ -10,8 +10,11 @@
     <PackageReference Include="Confluent.SchemaRegistry.Serdes.Json" Version="1.4.2" />
     <PackageReference Include="FluentFTP" Version="32.4.3" />
     <PackageReference Include="GeoAPI" Version="1.7.5" />
+    <PackageReference Include="GeoJSON.Net" Version="1.2.20-rc" />
     <PackageReference Include="MongoDB.Driver" Version="2.10" />
+    <PackageReference Include="morelinq" Version="3.3.2" />
     <PackageReference Include="NetTopologySuite" Version="2.0.0" />
+    <PackageReference Include="NetTopologySuite.IO.GeoJSON" Version="2.0.3" />
     <PackageReference Include="Newtonsoft.Json" Version="12.0.3" />
     <PackageReference Include="System.ServiceModel.Syndication" Version="5.0.0-preview.6.20305.6" />
   </ItemGroup>
