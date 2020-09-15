@@ -7,27 +7,27 @@ using System.Linq;
 using Confluent.Kafka;
 using Newtonsoft.Json.Linq;
 using System.Diagnostics;
-using GeoAPI.Geometries;
 using NetTopologySuite.Geometries;
-using NetTopologySuite.Operation.Polygonize;
 using NetTopologySuite.IO;
-using GeoJSON.Net;
-using NetTopologySuite.Features;
-using MoreLinq;
+using System.Data.SqlClient;
+using System.Text;
 
 
 namespace Work
 {
     class Program
     {
-         static FTPClient  client = new FTPClient();
+        static FTPClient client = new FTPClient();
 
 
         public static async Task Main(string[] args)
         {
             //await getinitialAdressData();
-            await getLatestGeoData();
-            //await getLatestAdressData();
+            //await getLatestGeoData();
+            await getLatestAdressData();
+            //checkLatestData();
+            //checkPosition();
+
 
         }
 
@@ -35,40 +35,41 @@ namespace Work
         {
             //client.getAdressInitialLoad("https://selfservice.datafordeler.dk/filedownloads/626/334",@"/home/mehigh/ftptrials/adress.zip");
             //client.UnzipFile(@"/home/mehigh/ftptrials/",@"/home/mehigh/ftptrials/");
-            await ProcessLatestAdresses("/home/mehigh/ftptrials/","/home/mehigh/newftp",538913, 6182387, 568605, 6199152);
+            await ProcessLatestAdresses("/home/mehigh/ftptrials/", "/home/mehigh/newftp", 538913, 6182387, 568605, 6199152);
 
         }
 
         public static async Task getLatestAdressData()
         {
-            await client.getFileFtp("ftp3.datafordeler.dk","JFOWRLSDKM","sWRbn2M8y2tH!","/home/mehigh/ftptrials/");
-            client.UnzipFile(@"/home/mehigh/ftptrials/",@"/home/mehigh/ftptrials/");
-            await ProcessLatestAdresses("/home/mehigh/ftptrials/","/home/mehigh/newftp",538913, 6182387, 568605, 6199152);
+            await client.getFileFtp("ftp3.datafordeler.dk", "JFOWRLSDKM", "sWRbn2M8y2tH!", "/home/mehigh/ftptrials/");
+            client.UnzipFile(@"/home/mehigh/ftptrials/", @"/home/mehigh/ftptrials/");
+            await ProcessLatestAdresses("/home/mehigh/ftptrials/", "/home/mehigh/newftp", 538913, 6182387, 568605, 6199152);
         }
+
 
         public static async Task getLatestGeoData()
         {
-            //await client.getFileFtp("ftp3.datafordeler.dk","PCVZLGPTJE","sWRbn2M8y2tH!","/home/mehigh/geo/");
-            //client.UnzipFile(@"/home/mehigh/geo/",@"/home/mehigh/geo/geogml");
-            //convertToGeojson();
-            ProcessGeoDirectory(@"/home/mehigh/geo/",@"/home/mehigh/NewGeo/", new List<string>(){"trae","bygning","chikane","bygvaerk","erhverv","systemlinje","vejkant"},538913,6182387,568605,6199152);
+            await client.getFileFtp("ftp3.datafordeler.dk", "PCVZLGPTJE", "sWRbn2M8y2tH!", "/home/mehigh/geo/");
+            client.UnzipFile(@"/home/mehigh/geo/", @"/home/mehigh/geo/geogml");
+            convertToGeojson();
+            ProcessGeoDirectory(@"/home/mehigh/geo/", @"/home/mehigh/NewGeo/", new List<string>() { "trae", "bygning", "chikane", "erhverv", "bygvaerk", "systemlinje", "vejkant", "vejmidte" }, 538913, 6182387, 568605, 6199152);
         }
 
-        public static void ProcessGeoDirectory(string sourceDirectory, string destinationDirectory,List<String> geoFilter,double minX,double minY,double maxX,double maxY)
+        public static void ProcessGeoDirectory(string sourceDirectory, string destinationDirectory, List<String> geoFilter, double minX, double minY, double maxX, double maxY)
         {
             List<String> fileEntries = Directory.GetFiles(sourceDirectory).ToList();
             List<String> filtered = new List<String>();
             var result = fileEntries.Where(a => geoFilter.Any(b => a.Contains(b))).ToList();
-            
+
             foreach (string fileName in result)
             {
                 Console.WriteLine(fileName);
                 var fileNoExtension = Path.GetFileNameWithoutExtension(fileName);
-                var dest = Path.Combine(destinationDirectory,fileNoExtension + ".json");
-                filterGeoPosition(fileName,minX,maxX,minY,maxY);
-                File.Move(fileName,dest);
+                var dest = Path.Combine(destinationDirectory, fileNoExtension + ".json");
+                filterGeoPosition(fileName, minX, maxX, minY, maxY);
+                File.Move(fileName, dest);
             }
-            
+
         }
 
         public static void convertToGeojson()
@@ -84,31 +85,32 @@ namespace Work
             proc.Start();
         }
 
-        public static async Task  ProcessLatestAdresses(string sourceDirectory, string destinationDirectory,double minX, double minY, double maxX, double maxY)
+
+        public static async Task ProcessLatestAdresses(string sourceDirectory, string destinationDirectory, double minX, double minY, double maxX, double maxY)
         {
             DirectoryInfo destinfo = new DirectoryInfo(destinationDirectory);
-            if(destinfo.Exists == false)
+            if (destinfo.Exists == false)
             {
                 Directory.CreateDirectory(destinationDirectory);
             }
             DirectoryInfo sourceinfo = new DirectoryInfo(sourceDirectory);
-            DirectoryInfo [] dirs = sourceinfo.GetDirectories();
+            DirectoryInfo[] dirs = sourceinfo.GetDirectories();
 
             List<String> fileEntries = Directory.GetFiles(sourceDirectory).ToList();
             foreach (string filename in fileEntries)
             {
                 if (!filename.Contains("Metadata"))
                 {
-                    await AdressToKafka(filename,minX,minY,maxX,maxY);
+                    await AdressToKafka(filename, minX, minY, maxX, maxY);
                     string file = Path.GetFileName(filename);
-                    string destFile = Path.Combine(destinationDirectory,file);
+                    string destFile = Path.Combine(destinationDirectory, file);
                     File.Move(filename, destFile);
                     Console.WriteLine("File moved in new directory");
                 }
                 else
                 {
                     string file = Path.GetFileName(filename);
-                    string destFile = Path.Combine(destinationDirectory,file);
+                    string destFile = Path.Combine(destinationDirectory, file);
                     File.Move(filename, destFile);
                 }
             }
@@ -141,8 +143,11 @@ namespace Work
             return String.Empty;
         }
 
-         public static async Task AdressToKafka(string filename,double minX, double minY, double maxX, double maxY)
+        public static async Task AdressToKafka(string filename, double minX, double minY, double maxX, double maxY)
         {
+            var hussnummerBatch = new List<string>();
+            var adresspunktBatch = new List<string>();
+            var newHussnummerBatch = new List<string>();
             using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
             using (StreamReader sr = new StreamReader(fs))
             using (JsonTextReader reader = new JsonTextReader(sr))
@@ -164,6 +169,7 @@ namespace Work
                     }
 
                     var jsonText = new List<string>();
+
                     // Now process each store individually
                     while (await reader.ReadAsync())
                     {
@@ -182,51 +188,123 @@ namespace Work
 
 
 
-                                if (listName.Equals("AdressepunktList") | listName.Equals("NavngivenVejList"))
+                                if (listName.Equals("AdressepunktList"))
                                 {
                                     var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
-                                    KafkaProducer(listName, boundingBatch);
+                                    foreach (var b in boundingBatch)
+                                    {
+                                        adresspunktBatch.Add(b);
+                                    }
+                                    //KafkaProducer(listName, boundingBatch);
+                                    //checkLatestData(boundingBatch);
+                                    //boundingBatch.Clear();
+                                    jsonText.Clear();
+                                    //Console.WriteLine("Wrote 100000 objects into topic");
+                                }
+                                else if (listName.Equals("HusnummerList"))
+                                {
+
+                                    foreach (var ob in jsonText)
+                                    {
+                                        hussnummerBatch.Add(ob);
+                                    }
+                                    Console.WriteLine("This is the adresspunktbatch inside husnummer" + adresspunktBatch.Count);
+                                    jsonText.Clear();
+                                }
+                                else if (listName.Equals("NavngivenVejList"))
+                                {
+                                    var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
+                                    //KafkaProducer(listName, boundingBatch);
+                                    //checkLatestData(boundingBatch);
                                     boundingBatch.Clear();
                                     jsonText.Clear();
                                     Console.WriteLine("Wrote 100000 objects into topic");
                                 }
                                 else
                                 {
-                                    KafkaProducer(listName, jsonText);
-
+                                    //KafkaProducer(listName, jsonText);
+                                    //checkLatestData(jsonText);
                                     jsonText.Clear();
                                     Console.WriteLine("Wrote 100000 objects into topic");
                                 }
+
+
                             }
 
 
                         }
                     }
 
-
-                    if (listName.Equals("AdressepunktList") | listName.Equals("NavngivenVejList"))
+                    if (listName.Equals("AdressepunktList"))
                     {
                         var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
-                        KafkaProducer(listName, boundingBatch);
+                        foreach (var b in boundingBatch)
+                        {
+                            adresspunktBatch.Add(b);
+                        }
+                        //KafkaProducer(listName, boundingBatch);
+                        //checkLatestData(boundingBatch);
+                        //boundingBatch.Clear();
+                        jsonText.Clear();
+                        //Console.WriteLine("Wrote 100000 objects into topic");
+                        Console.WriteLine("This is the adresspunkt inside loop " + adresspunktBatch.Count);
+                    }
+                    else if (listName.Equals("HusnummerList"))
+                    {
+
+                        foreach (var ob in jsonText)
+                        {
+                            hussnummerBatch.Add(ob);
+                        }
+                        jsonText.Clear();
+                        Console.WriteLine("This is the hussnummer inside loop " + hussnummerBatch.Count);
+                        foreach (var obt in hussnummerBatch)
+                        {
+                            foreach (var opt in adresspunktBatch)
+                            {
+                                JObject o1 = JObject.Parse(obt);
+                                JObject o2 = JObject.Parse(opt);
+                                if (o1["addressPoint"].Equals(o2["id_lokalId"]))
+                                {
+                                    o1["position"] = o2["position"];
+                                    Console.WriteLine(o1.ToString());
+                                }
+
+                            }
+                        }
+
+
+                    }
+                    else if (listName.Equals("NavngivenVejList"))
+                    {
+                        var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
+                        //KafkaProducer(listName, boundingBatch);
+                        //checkLatestData(boundingBatch);
                         boundingBatch.Clear();
                         jsonText.Clear();
-                        
+                        Console.WriteLine("Wrote 100000 objects into topic");
                     }
                     else
                     {
-                        KafkaProducer(listName, jsonText);
+                        //KafkaProducer(listName, jsonText);
+                        //checkLatestData(jsonText);
                         jsonText.Clear();
-                        System.Console.WriteLine("The end of the world!");
+                        Console.WriteLine("Wrote 100000 objects into topic");
                     }
+                    Console.WriteLine("This is the adresspunkt" + adresspunktBatch.Count);
+                    Console.WriteLine("THis is the husnummer" + hussnummerBatch.Count);
+
                 }
             }
         }
 
-        public static void filterGeoPosition(String fileName,double minX,double maxX,double minY,double maxY)
+     
+        public static void filterGeoPosition(String fileName, double minX, double maxX, double minY, double maxY)
         {
             String jsonDoc = "";
             List<String> batch = new List<string>();
             var boundingBox = new NetTopologySuite.Geometries.Envelope(minX, maxX, minY, maxY);
+            NetTopologySuite.Features.Feature feature = new NetTopologySuite.Features.Feature();
 
             using (FileStream s = File.Open(fileName, FileMode.Open))
             using (var streamReader = new StreamReader(s))
@@ -240,41 +318,60 @@ namespace Work
                     {
                         var reader = new NetTopologySuite.IO.GeoJsonReader();
                         //var feature = reader.Read<GeoJSON.Net.Feature.FeatureCollection>(jsonreader);
-                        var featurecollection = reader.Read<NetTopologySuite.Features.FeatureCollection>(jsonreader);
-                        if (featurecollection == null)
+                        //var featurecollection = reader.Read<NetTopologySuite.Features.FeatureCollection>(jsonreader);
+                        if (jsonreader.TokenType == Newtonsoft.Json.JsonToken.StartObject)
                         {
-                            Console.WriteLine("No object has been read");
-                        }
-                        Console.WriteLine(featurecollection.Count);
-                        for (int featureIndex = 0; featureIndex < featurecollection.Count; featureIndex++)
-                        {
-                            var geometryfeature = featurecollection[featureIndex];
-                            var geo = geometryfeature.Geometry;
-                            var atr = geometryfeature.Attributes;
-                            if (boundingBox.Intersects(geo.EnvelopeInternal))
+                            while (jsonreader.Read())
                             {
-                                //Console.WriteLine("This is one object " + be.ToString());
-                                var jsonObj = new
+                                if (jsonreader.TokenType == Newtonsoft.Json.JsonToken.StartArray)
                                 {
-                                    gml_id = atr.GetOptionalValue("gml_id"),
-                                    id_lokalId = atr.GetOptionalValue("id_lokalid"),
-                                    geometry = geo.ToString()
-                                };
-                                jsonDoc = JsonConvert.SerializeObject(jsonObj);
-                                batch.Add(jsonDoc);
-                                if(batch.Count >= 5000)
-                                {
-                                    KafkaProducerGeo(topicname, batch);
-                                    batch.Clear();
+                                    while (jsonreader.Read())
+                                    {
+                                        try
+                                        {
+                                            if (jsonreader != null)
+                                            {
+                                                feature = reader.Read<NetTopologySuite.Features.Feature>(jsonreader);
+                                            }
+
+                                            var geo = feature.Geometry;
+                                            var atr = feature.Attributes;
+                                            if (boundingBox.Intersects(geo.EnvelopeInternal))
+                                            {
+                                                //Console.WriteLine("This is one object " + be.ToString());
+                                                var jsonObj = new
+                                                {
+                                                    gml_id = atr.GetOptionalValue("gml_id"),
+                                                    id_lokalId = atr.GetOptionalValue("id_lokalid"),
+                                                    geo = geo.ToString()
+                                                };
+                                                jsonDoc = JsonConvert.SerializeObject(jsonObj);
+                                                //Console.WriteLine(jsonDoc);
+                                                batch.Add(jsonDoc);
+                                                if (batch.Count >= 5000)
+                                                {
+                                                    KafkaProducerGeo(topicname, batch);
+                                                    batch.Clear();
+                                                }
+                                            }
+                                        }
+                                        catch (Newtonsoft.Json.JsonReaderException e)
+                                        {
+                                            Console.WriteLine("Error writing data: {0}.", e.GetType().Name);
+                                            Console.WriteLine(jsonreader.ToString());
+                                            break;
+                                        }
+                                    }
                                 }
                             }
                         }
+                        if (batch != null)
+                        {
+                            KafkaProducerGeo(topicname, batch);
+                            batch.Clear();
+                        }
                     }
-                    if(batch!=null)
-                    {
-                    KafkaProducerGeo(topicname, batch);
-                    batch.Clear();
-                    }
+
                 }
             }
 
@@ -283,7 +380,7 @@ namespace Work
         {
             var config = new ProducerConfig { BootstrapServers = "localhost:9092", LingerMs = 5, BatchNumMessages = 100000, QueueBufferingMaxMessages = 100000 };
             int i = 0;
-            using (var p = new ProducerBuilder<String, String>(config).Build())
+            using (var p = new ProducerBuilder<string, JObject>(config).Build())
             {
                 Console.WriteLine(batch.Count());
                 i += 10000;
@@ -296,13 +393,13 @@ namespace Work
                     {
                         if (jp.Name == "id_lokalId")
                         {
-                            id = (String)jp.Value;
+                            id = (string)jp.Value;
                         }
                     }
 
                     try
                     {
-                        p.Produce(topicname, new Message<String, string> { Value = document, Key = id });
+                        p.Produce(topicname, new Message<string, JObject> { Value = o, Key = id });
                     }
                     catch (ProduceException<Null, string> e)
                     {

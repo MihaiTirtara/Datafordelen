@@ -20,35 +20,35 @@ create table postal(id_lokalId varchar, navn varchar, postnr varchar, postalCode
 
 create table postalarea with (value_format='avro') as select * from postal;
 
-create table bygning("properties" struct<gml_id varchar, id_lokalid varchar>, geometry varchar) with (kafka_topic='bygning',value_format='json',partitions=1,replicas=1);
+create table bygning(gml_id varchar, id_lokalId varchar, geometry varchar) with (kafka_topic='bygning',value_format='json',key='id_lokalId',partitions=1,replicas=1);
 
 create table building with (value_format='avro') as select * from bygning;
 
-create table chikane("properties" struct<gml_id varchar, id_lokalid varchar>, geometry varchar) with (kafka_topic='chikane',value_format='json',partitions=1,replicas=1);
+create table chikane(gml_id varchar, id_lokalId varchar, geometry varchar) with (kafka_topic='chikane',value_format='json',key='id_lokalId',partitions=1,replicas=1);
 
 create table chicane with (value_format='avro') as select * from chikane;
 
-create table bygvaerk("properties" struct<gml_id varchar, id_lokalid varchar>, geometry varchar) with (kafka_topic='bygvaerk',value_format='json',partitions=1,replicas=1);
+create table bygvaerk(gml_id varchar, id_lokalId varchar, geometry varchar) with (kafka_topic='bygvaerk',value_format='json',key='id_lokalId',partitions=1,replicas=1);
 
 create table construction with (value_format='avro') as select * from bygvaerk;
 
-create table trae("properties" struct<gml_id varchar, id_lokalid varchar>, geometry varchar) with (kafka_topic='trae',value_format='json',partitions=1,replicas=1);
+create table trae(gml_id varchar, id_lokalId varchar, geometry varchar) with (kafka_topic='trae',value_format='json',key='id_lokalId',partitions=1,replicas=1);
 
 create table tree with (value_format='avro') as select * from trae;
 
-create table erhverv("properties" struct<gml_id varchar, id_lokalid varchar>, geometry varchar) with (kafka_topic='erhverv',value_format='json',partitions=1,replicas=1);
+create table erhverv(gml_id varchar, id_lokalId varchar, geometry varchar) with (kafka_topic='erhverv',value_format='json',key='id_lokalId',partitions=1,replicas=1);
 
 create table commercial with (value_format='avro') as select * from erhverv;
 
-create table systemlinje("properties" struct<gml_id varchar, id_lokalid varchar>, geometry varchar) with (kafka_topic='systemlinje',value_format='json',partitions=1,replicas=1);
+create table systemlinje(gml_id varchar, id_lokalId varchar, geometry varchar) with (kafka_topic='systemlinje',value_format='json',key='id_lokalId',partitions=1,replicas=1);
 
 create table systemline with (value_format='avro') as select * from systemlinje;
 
-create table vejkant("properties" struct<gml_id varchar, id_lokalid varchar>, geometry varchar) with (kafka_topic='vejkant',value_format='json',partitions=1,replicas=1);
+create table vejkant(gml_id varchar, id_lokalId varchar, geometry varchar) with (kafka_topic='vejkant',value_format='json',key='id_lokalId',partitions=1,replicas=1);
 
 create table roadedge with (value_format='avro') as select * from vejkant;
 
-create table vejmidte("properties" struct<gml_id varchar, id_lokalid varchar>, geometry varchar) with (kafka_topic='vejmidte',value_format='json',partitions=1,replicas=1);
+create table vejmidte(gml_id varchar, id_lokalId varchar, geometry varchar) with (kafka_topic='vejmidte',value_format='json',key='id_lokalId',partitions=1,replicas=1);
 
 create table roadmid with (value_format='avro') as select * from vejmidte;
 
