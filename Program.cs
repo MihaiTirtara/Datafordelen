@@ -145,9 +145,9 @@ namespace Work
 
         public static async Task AdressToKafka(string filename, double minX, double minY, double maxX, double maxY)
         {
-            var hussnummerBatch = new List<JObject>();
-            var adresspunktBatch = new List<JObject>();
-            var newHussnummerBatch = new List<JObject>();
+            var hussnummerBatch = new List<string>();
+            var adresspunktBatch = new List<string>();
+            var newHussnummerBatch = new List<string>();
             using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
             using (StreamReader sr = new StreamReader(fs))
             using (JsonTextReader reader = new JsonTextReader(sr))
@@ -168,7 +168,7 @@ namespace Work
                         await reader.ReadAsync();
                     }
 
-                    var jsonText = new List<JObject>();
+                    var jsonText = new List<string>();
 
                     // Now process each store individually
                     while (await reader.ReadAsync())
@@ -211,11 +211,14 @@ namespace Work
                                     {
                                         foreach (var adress in adresspunktBatch)
                                         {
-                                            if (hus["addressPoint"].Equals(adress["id_lokalId"]))
+                                            JObject ohus = JObject.Parse(hus);
+                                            JObject oadress = JObject.Parse(adress);
+                                            if (ohus["addressPoint"].Equals(oadress["id_lokalId"]))
                                             {
-                                                hus["position"] = adress["position"];
+                                                ohus["position"] = oadress["position"];
                                                 //Console.WriteLine(o1.ToString());
-                                                newHussnummerBatch.Add(hus);
+                                                var newhus = JsonConvert.SerializeObject(ohus, Formatting.Indented);
+                                                newHussnummerBatch.Add(newhus);
                                             }
 
                                         }
@@ -273,11 +276,14 @@ namespace Work
                         {
                             foreach (var adress in adresspunktBatch)
                             {
-                                if (hus["addressPoint"].Equals(adress["id_lokalId"]))
+                                JObject ohus = JObject.Parse(hus);
+                                JObject oadress = JObject.Parse(adress);
+                                if (ohus["addressPoint"].Equals(oadress["id_lokalId"]))
                                 {
-                                    hus["position"] = adress["position"];
+                                    ohus["position"] = oadress["position"];
                                     //Console.WriteLine(o1.ToString());
-                                    newHussnummerBatch.Add(hus);
+                                    var newhus = JsonConvert.SerializeObject(ohus, Formatting.Indented);
+                                    newHussnummerBatch.Add(newhus);
                                 }
 
                             }
@@ -306,8 +312,7 @@ namespace Work
                         jsonText.Clear();
                         Console.WriteLine("Wrote 100000 objects into topic");
                     }
-                    Console.WriteLine("This is the adresspunkt" + adresspunktBatch.Count);
-                    Console.WriteLine("THis is the husnummer" + hussnummerBatch.Count);
+                  
 
                 }
             }
@@ -317,7 +322,7 @@ namespace Work
         public static void filterGeoPosition(String fileName, double minX, double maxX, double minY, double maxY)
         {
             String jsonDoc = "";
-            List<JObject> batch = new List<JObject>();
+            List<string> batch = new List<string>();
             var boundingBox = new NetTopologySuite.Geometries.Envelope(minX, maxX, minY, maxY);
             NetTopologySuite.Features.Feature feature = new NetTopologySuite.Features.Feature();
 
@@ -392,19 +397,20 @@ namespace Work
             }
 
         }
-        public static void KafkaProducer(String topicname, List<JObject> batch)
+        public static void KafkaProducer(String topicname, List<string> batch)
         {
             var config = new ProducerConfig { BootstrapServers = "localhost:9092", LingerMs = 5, BatchNumMessages = 100000, QueueBufferingMaxMessages = 100000 };
             int i = 0;
-            using (var p = new ProducerBuilder<string, JObject>(config).Build())
+            using (var p = new ProducerBuilder<string, string>(config).Build())
             {
                 Console.WriteLine(batch.Count());
                 i += 10000;
                 foreach (var document in batch)
                 {
                     String id = String.Empty;
+                    JObject o = JObject.Parse(document);
 
-                    foreach (JProperty jp in document.Properties().ToList())
+                    foreach (JProperty jp in o.Properties().ToList())
                     {
                         if (jp.Name == "id_lokalId")
                         {
@@ -414,7 +420,7 @@ namespace Work
 
                     try
                     {
-                        p.Produce(topicname, new Message<string, JObject> { Value = document, Key = id });
+                        p.Produce(topicname, new Message<string, string> { Value = document, Key = id });
                     }
                     catch (ProduceException<Null, string> e)
                     {
@@ -429,11 +435,11 @@ namespace Work
         }
 
 
-        public static void KafkaProducerGeo(String topicname, List<JObject> batch)
+        public static void KafkaProducerGeo(String topicname, List<string> batch)
         {
             var config = new ProducerConfig { BootstrapServers = "localhost:9092", LingerMs = 5, BatchNumMessages = 100000, QueueBufferingMaxMessages = 100000 };
             int i = 0;
-            using (var p = new ProducerBuilder<string, JObject>(config).Build())
+            using (var p = new ProducerBuilder<string, string>(config).Build())
             {
                 Console.WriteLine(topicname);
                 Console.WriteLine(batch.Count());
@@ -445,8 +451,9 @@ namespace Work
                     {
                         String id = String.Empty;
 
+                        JObject o = JObject.Parse(document);
                         //Console.Write(o);
-                        foreach (JProperty jp in document.Properties().ToList())
+                        foreach (JProperty jp in o.Properties().ToList())
                         {
                             if (jp.Name == "id_lokalId")
                             {
@@ -455,7 +462,7 @@ namespace Work
                         }
                         try
                         {
-                            p.Produce(topicname, new Message<string, JObject> { Value = document, Key = id });
+                            p.Produce(topicname, new Message<string, string> { Value = document, Key = id });
                         }
                         catch (ProduceException<Null, string> e)
                         {
@@ -474,10 +481,10 @@ namespace Work
         }
 
 
-        public static List<JObject> newfilterAdressPosition(List<JObject> batch, double minX, double minY, double maxX, double maxY)
+        public static List<string> newfilterAdressPosition(List<string> batch, double minX, double minY, double maxX, double maxY)
         {
 
-            List<JObject> filteredBatch = new List<JObject>();
+            List<string> filteredBatch = new List<string>();
             GeometryFactory geometryFactory = new GeometryFactory();
             Geometry line;
             Geometry point;
@@ -485,8 +492,8 @@ namespace Work
             var boundingBox = new NetTopologySuite.Geometries.Envelope(minX, maxX, minY, maxY);
             foreach (var document in batch)
             {
-
-                foreach (JProperty jp in document.Properties().ToList())
+                JObject o = JObject.Parse(document);
+                foreach (JProperty jp in o.Properties().ToList())
                 {
                     if (jp.Name == "position")
                     {
@@ -546,7 +553,7 @@ namespace Work
             return filteredBatch;
         }
 
-        public static JObject ChangeAdressNames(JObject jo)
+        public static string ChangeAdressNames(JObject jo)
         {
             //Console.WriteLine("inside function");
 
@@ -723,7 +730,8 @@ namespace Work
                         break;
                 }
             }
-            return jo;
+            var obj = JsonConvert.SerializeObject(jo, Formatting.Indented);
+            return obj;
 
         }
 
