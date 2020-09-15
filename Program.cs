@@ -145,9 +145,9 @@ namespace Work
 
         public static async Task AdressToKafka(string filename, double minX, double minY, double maxX, double maxY)
         {
-            var hussnummerBatch = new List<string>();
-            var adresspunktBatch = new List<string>();
-            var newHussnummerBatch = new List<string>();
+            var hussnummerBatch = new List<JObject>();
+            var adresspunktBatch = new List<JObject>();
+            var newHussnummerBatch = new List<JObject>();
             using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
             using (StreamReader sr = new StreamReader(fs))
             using (JsonTextReader reader = new JsonTextReader(sr))
@@ -168,7 +168,7 @@ namespace Work
                         await reader.ReadAsync();
                     }
 
-                    var jsonText = new List<string>();
+                    var jsonText = new List<JObject>();
 
                     // Now process each store individually
                     while (await reader.ReadAsync())
@@ -185,8 +185,6 @@ namespace Work
 
                             if (jsonText.Count >= 100000)
                             {
-
-
 
                                 if (listName.Equals("AdressepunktList"))
                                 {
@@ -208,22 +206,36 @@ namespace Work
                                     {
                                         hussnummerBatch.Add(ob);
                                     }
-                                    Console.WriteLine("This is the adresspunktbatch inside husnummer" + adresspunktBatch.Count);
                                     jsonText.Clear();
+                                    foreach (var hus in hussnummerBatch)
+                                    {
+                                        foreach (var adress in adresspunktBatch)
+                                        {
+                                            if (hus["addressPoint"].Equals(adress["id_lokalId"]))
+                                            {
+                                                hus["position"] = adress["position"];
+                                                //Console.WriteLine(o1.ToString());
+                                                newHussnummerBatch.Add(hus);
+                                            }
+
+                                        }
+                                    }
+                                    KafkaProducer(listName, newHussnummerBatch);
+                                    adresspunktBatch.Clear();
+                                    hussnummerBatch.Clear();
+                                    newHussnummerBatch.Clear();
                                 }
                                 else if (listName.Equals("NavngivenVejList"))
                                 {
                                     var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
-                                    //KafkaProducer(listName, boundingBatch);
-                                    //checkLatestData(boundingBatch);
+                                    KafkaProducer(listName, boundingBatch);
                                     boundingBatch.Clear();
                                     jsonText.Clear();
                                     Console.WriteLine("Wrote 100000 objects into topic");
                                 }
                                 else
                                 {
-                                    //KafkaProducer(listName, jsonText);
-                                    //checkLatestData(jsonText);
+                                    KafkaProducer(listName, jsonText);
                                     jsonText.Clear();
                                     Console.WriteLine("Wrote 100000 objects into topic");
                                 }
@@ -242,9 +254,8 @@ namespace Work
                         {
                             adresspunktBatch.Add(b);
                         }
-                        //KafkaProducer(listName, boundingBatch);
-                        //checkLatestData(boundingBatch);
-                        //boundingBatch.Clear();
+                        KafkaProducer(listName, boundingBatch);
+                        boundingBatch.Clear();
                         jsonText.Clear();
                         //Console.WriteLine("Wrote 100000 objects into topic");
                         Console.WriteLine("This is the adresspunkt inside loop " + adresspunktBatch.Count);
@@ -258,36 +269,40 @@ namespace Work
                         }
                         jsonText.Clear();
                         Console.WriteLine("This is the hussnummer inside loop " + hussnummerBatch.Count);
-                        foreach (var obt in hussnummerBatch)
+                        foreach (var hus in hussnummerBatch)
                         {
-                            foreach (var opt in adresspunktBatch)
+                            foreach (var adress in adresspunktBatch)
                             {
-                                JObject o1 = JObject.Parse(obt);
-                                JObject o2 = JObject.Parse(opt);
-                                if (o1["addressPoint"].Equals(o2["id_lokalId"]))
+                                if (hus["addressPoint"].Equals(adress["id_lokalId"]))
                                 {
-                                    o1["position"] = o2["position"];
-                                    Console.WriteLine(o1.ToString());
+                                    hus["position"] = adress["position"];
+                                    //Console.WriteLine(o1.ToString());
+                                    newHussnummerBatch.Add(hus);
                                 }
 
                             }
                         }
+
+                        KafkaProducer(listName, newHussnummerBatch);
+                        adresspunktBatch.Clear();
+                        hussnummerBatch.Clear();
+                        newHussnummerBatch.Clear();
 
 
                     }
                     else if (listName.Equals("NavngivenVejList"))
                     {
                         var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
-                        //KafkaProducer(listName, boundingBatch);
-                        //checkLatestData(boundingBatch);
+                        KafkaProducer(listName, boundingBatch);
+
                         boundingBatch.Clear();
                         jsonText.Clear();
                         Console.WriteLine("Wrote 100000 objects into topic");
                     }
                     else
                     {
-                        //KafkaProducer(listName, jsonText);
-                        //checkLatestData(jsonText);
+                        KafkaProducer(listName, jsonText);
+
                         jsonText.Clear();
                         Console.WriteLine("Wrote 100000 objects into topic");
                     }
@@ -298,11 +313,11 @@ namespace Work
             }
         }
 
-     
+
         public static void filterGeoPosition(String fileName, double minX, double maxX, double minY, double maxY)
         {
             String jsonDoc = "";
-            List<String> batch = new List<string>();
+            List<JObject> batch = new List<JObject>();
             var boundingBox = new NetTopologySuite.Geometries.Envelope(minX, maxX, minY, maxY);
             NetTopologySuite.Features.Feature feature = new NetTopologySuite.Features.Feature();
 
@@ -346,8 +361,9 @@ namespace Work
                                                     geo = geo.ToString()
                                                 };
                                                 jsonDoc = JsonConvert.SerializeObject(jsonObj);
+                                                dynamic obj = JObject.Parse(jsonDoc);
                                                 //Console.WriteLine(jsonDoc);
-                                                batch.Add(jsonDoc);
+                                                batch.Add(obj);
                                                 if (batch.Count >= 5000)
                                                 {
                                                     KafkaProducerGeo(topicname, batch);
@@ -376,7 +392,7 @@ namespace Work
             }
 
         }
-        public static void KafkaProducer(String topicname, List<String> batch)
+        public static void KafkaProducer(String topicname, List<JObject> batch)
         {
             var config = new ProducerConfig { BootstrapServers = "localhost:9092", LingerMs = 5, BatchNumMessages = 100000, QueueBufferingMaxMessages = 100000 };
             int i = 0;
@@ -388,8 +404,7 @@ namespace Work
                 {
                     String id = String.Empty;
 
-                    JObject o = JObject.Parse(document);
-                    foreach (JProperty jp in o.Properties().ToList())
+                    foreach (JProperty jp in document.Properties().ToList())
                     {
                         if (jp.Name == "id_lokalId")
                         {
@@ -399,7 +414,7 @@ namespace Work
 
                     try
                     {
-                        p.Produce(topicname, new Message<string, JObject> { Value = o, Key = id });
+                        p.Produce(topicname, new Message<string, JObject> { Value = document, Key = id });
                     }
                     catch (ProduceException<Null, string> e)
                     {
@@ -414,11 +429,11 @@ namespace Work
         }
 
 
-        public static void KafkaProducerGeo(String topicname, List<String> batch)
+        public static void KafkaProducerGeo(String topicname, List<JObject> batch)
         {
             var config = new ProducerConfig { BootstrapServers = "localhost:9092", LingerMs = 5, BatchNumMessages = 100000, QueueBufferingMaxMessages = 100000 };
             int i = 0;
-            using (var p = new ProducerBuilder<String, String>(config).Build())
+            using (var p = new ProducerBuilder<string, JObject>(config).Build())
             {
                 Console.WriteLine(topicname);
                 Console.WriteLine(batch.Count());
@@ -430,9 +445,8 @@ namespace Work
                     {
                         String id = String.Empty;
 
-                        JObject o = JObject.Parse(document);
                         //Console.Write(o);
-                        foreach (JProperty jp in o.Properties().ToList())
+                        foreach (JProperty jp in document.Properties().ToList())
                         {
                             if (jp.Name == "id_lokalId")
                             {
@@ -441,7 +455,7 @@ namespace Work
                         }
                         try
                         {
-                            p.Produce(topicname, new Message<String, string> { Value = document, Key = id });
+                            p.Produce(topicname, new Message<string, JObject> { Value = document, Key = id });
                         }
                         catch (ProduceException<Null, string> e)
                         {
@@ -460,10 +474,10 @@ namespace Work
         }
 
 
-        public static List<String> newfilterAdressPosition(List<String> batch, double minX, double minY, double maxX, double maxY)
+        public static List<JObject> newfilterAdressPosition(List<JObject> batch, double minX, double minY, double maxX, double maxY)
         {
 
-            List<String> filteredBatch = new List<string>();
+            List<JObject> filteredBatch = new List<JObject>();
             GeometryFactory geometryFactory = new GeometryFactory();
             Geometry line;
             Geometry point;
@@ -471,8 +485,8 @@ namespace Work
             var boundingBox = new NetTopologySuite.Geometries.Envelope(minX, maxX, minY, maxY);
             foreach (var document in batch)
             {
-                var jo = JObject.Parse(document);
-                foreach (JProperty jp in jo.Properties().ToList())
+
+                foreach (JProperty jp in document.Properties().ToList())
                 {
                     if (jp.Name == "position")
                     {
@@ -532,7 +546,7 @@ namespace Work
             return filteredBatch;
         }
 
-        public static string ChangeAdressNames(JObject jo)
+        public static JObject ChangeAdressNames(JObject jo)
         {
             //Console.WriteLine("inside function");
 
@@ -709,8 +723,7 @@ namespace Work
                         break;
                 }
             }
-            var obj = JsonConvert.SerializeObject(jo, Formatting.Indented);
-            return obj;
+            return jo;
 
         }
 
