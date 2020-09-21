@@ -22,8 +22,8 @@ namespace Work
 
         public static async Task Main(string[] args)
         {
-            //await getinitialAdressData();
-            //await getLatestGeoData();
+            await getinitialAdressData();
+            await getLatestGeoData();
             await getLatestAdressData();
             //checkLatestData();
             //checkPosition();
@@ -33,8 +33,8 @@ namespace Work
 
         public static async Task getinitialAdressData()
         {
-            //client.getAdressInitialLoad("https://selfservice.datafordeler.dk/filedownloads/626/334",@"/home/mehigh/ftptrials/adress.zip");
-            //client.UnzipFile(@"/home/mehigh/ftptrials/",@"/home/mehigh/ftptrials/");
+            client.getAdressInitialLoad("https://selfservice.datafordeler.dk/filedownloads/626/334",@"/home/mehigh/ftptrials/adress.zip");
+            client.UnzipFile(@"/home/mehigh/ftptrials/",@"/home/mehigh/ftptrials/");
             await ProcessLatestAdresses("/home/mehigh/ftptrials/", "/home/mehigh/newftp", 538913, 6182387, 568605, 6199152);
 
         }
@@ -51,7 +51,7 @@ namespace Work
         {
             await client.getFileFtp("ftp3.datafordeler.dk", "PCVZLGPTJE", "sWRbn2M8y2tH!", "/home/mehigh/geo/");
             client.UnzipFile(@"/home/mehigh/geo/", @"/home/mehigh/geo/geogml");
-            convertToGeojson();
+            convertToGeojson(new List<string>() { "trae", "bygning", "chikane", "erhverv", "bygvaerk", "systemlinje", "vejkant", "vejmidte" });
             ProcessGeoDirectory(@"/home/mehigh/geo/", @"/home/mehigh/NewGeo/", new List<string>() { "trae", "bygning", "chikane", "erhverv", "bygvaerk", "systemlinje", "vejkant", "vejmidte" }, 538913, 6182387, 568605, 6199152);
         }
 
@@ -72,17 +72,26 @@ namespace Work
 
         }
 
-        public static void convertToGeojson()
+        public static void convertToGeojson(List<string> list)
         {
-            ProcessStartInfo startInfo = new ProcessStartInfo()
+            foreach (var item in list)
             {
-                FileName = @"/home/mehigh/confluentKafka/convert_script.sh",
-            };
-            Process proc = new Process()
-            {
-                StartInfo = startInfo,
-            };
-            proc.Start();
+                ProcessStartInfo startInfo = new ProcessStartInfo()
+                {
+                    FileName = @"/home/mehigh/confluentKafka/convert_script.sh",
+
+                    Arguments =  item
+                };
+                Process proc = new Process()
+                {
+                    StartInfo = startInfo,
+                };
+                proc.Start();
+                //string result = proc.StandardOutput.ReadToEnd();
+                proc.WaitForExit();
+                //return result;
+            }
+            //return null;
         }
 
 
@@ -312,7 +321,7 @@ namespace Work
                         jsonText.Clear();
                         Console.WriteLine("Wrote 100000 objects into topic");
                     }
-                  
+
 
                 }
             }
@@ -361,14 +370,15 @@ namespace Work
                                                 //Console.WriteLine("This is one object " + be.ToString());
                                                 var jsonObj = new
                                                 {
-                                                    gml_id = atr.GetOptionalValue("gml_id"),
+
                                                     id_lokalId = atr.GetOptionalValue("id_lokalid"),
+                                                    gml_id = atr.GetOptionalValue("gml_id"),
                                                     geo = geo.ToString()
                                                 };
                                                 jsonDoc = JsonConvert.SerializeObject(jsonObj);
-                                                dynamic obj = JObject.Parse(jsonDoc);
                                                 //Console.WriteLine(jsonDoc);
-                                                batch.Add(obj);
+                                                //Console.WriteLine(jsonDoc);
+                                                batch.Add(jsonDoc);
                                                 if (batch.Count >= 5000)
                                                 {
                                                     KafkaProducerGeo(topicname, batch);
@@ -379,7 +389,10 @@ namespace Work
                                         catch (Newtonsoft.Json.JsonReaderException e)
                                         {
                                             Console.WriteLine("Error writing data: {0}.", e.GetType().Name);
-                                            Console.WriteLine(jsonreader.ToString());
+                                            Console.WriteLine("The problem is at:" + e.Data.ToString());
+                                            Console.WriteLine("The keys are :" + e.Data.Keys.ToString());
+                                            Console.WriteLine("The values are :" + e.Data.Values.ToString());
+                                            //Console.WriteLine(jsonreader.ToString());
                                             break;
                                         }
                                     }
