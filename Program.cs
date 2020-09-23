@@ -22,19 +22,17 @@ namespace Work
 
         public static async Task Main(string[] args)
         {
-            await getinitialAdressData();
-            await getLatestGeoData();
+            //await getinitialAdressData();
+            //await getLatestGeoData();
             await getLatestAdressData();
-            //checkLatestData();
-            //checkPosition();
 
 
         }
 
         public static async Task getinitialAdressData()
         {
-            client.getAdressInitialLoad("https://selfservice.datafordeler.dk/filedownloads/626/334",@"/home/mehigh/ftptrials/adress.zip");
-            client.UnzipFile(@"/home/mehigh/ftptrials/",@"/home/mehigh/ftptrials/");
+            client.getAdressInitialLoad("https://selfservice.datafordeler.dk/filedownloads/626/334", @"/home/mehigh/ftptrials/adress.zip");
+            client.UnzipFile(@"/home/mehigh/ftptrials/", @"/home/mehigh/ftptrials/");
             await ProcessLatestAdresses("/home/mehigh/ftptrials/", "/home/mehigh/newftp", 538913, 6182387, 568605, 6199152);
 
         }
@@ -49,9 +47,9 @@ namespace Work
 
         public static async Task getLatestGeoData()
         {
-            await client.getFileFtp("ftp3.datafordeler.dk", "PCVZLGPTJE", "sWRbn2M8y2tH!", "/home/mehigh/geo/");
-            client.UnzipFile(@"/home/mehigh/geo/", @"/home/mehigh/geo/geogml");
-            convertToGeojson(new List<string>() { "trae", "bygning", "chikane", "erhverv", "bygvaerk", "systemlinje", "vejkant", "vejmidte" });
+            //await client.getFileFtp("ftp3.datafordeler.dk", "PCVZLGPTJE", "sWRbn2M8y2tH!", "/home/mehigh/geo/");
+            //client.UnzipFile(@"/home/mehigh/geo/", @"/home/mehigh/geo/geogml");
+            //convertToGeojson(new List<string>() { "trae", "bygning", "chikane", "erhverv", "bygvaerk", "systemlinje", "vejkant", "vejmidte" });
             ProcessGeoDirectory(@"/home/mehigh/geo/", @"/home/mehigh/NewGeo/", new List<string>() { "trae", "bygning", "chikane", "erhverv", "bygvaerk", "systemlinje", "vejkant", "vejmidte" }, 538913, 6182387, 568605, 6199152);
         }
 
@@ -80,18 +78,16 @@ namespace Work
                 {
                     FileName = @"/home/mehigh/confluentKafka/convert_script.sh",
 
-                    Arguments =  item
+                    Arguments = item
                 };
                 Process proc = new Process()
                 {
                     StartInfo = startInfo,
                 };
                 proc.Start();
-                //string result = proc.StandardOutput.ReadToEnd();
                 proc.WaitForExit();
-                //return result;
+
             }
-            //return null;
         }
 
 
@@ -389,10 +385,17 @@ namespace Work
                                         catch (Newtonsoft.Json.JsonReaderException e)
                                         {
                                             Console.WriteLine("Error writing data: {0}.", e.GetType().Name);
-                                            Console.WriteLine("The problem is at:" + e.Data.ToString());
-                                            Console.WriteLine("The keys are :" + e.Data.Keys.ToString());
-                                            Console.WriteLine("The values are :" + e.Data.Values.ToString());
-                                            //Console.WriteLine(jsonreader.ToString());
+                                            var geo = feature.Geometry;
+                                            var atr = feature.Attributes;
+                                            var jsonObj = new
+                                            {
+
+                                                id_lokalId = atr.GetOptionalValue("id_lokalid"),
+                                                gml_id = atr.GetOptionalValue("gml_id"),
+                                                geo = geo.ToString()
+                                            };
+                                            jsonDoc = JsonConvert.SerializeObject(jsonObj);
+                                            Console.WriteLine(jsonDoc);
                                             break;
                                         }
                                     }
@@ -501,6 +504,8 @@ namespace Work
             GeometryFactory geometryFactory = new GeometryFactory();
             Geometry line;
             Geometry point;
+            Geometry polygon;
+            Geometry multipoint;
             WKTReader rdr = new WKTReader(geometryFactory);
             var boundingBox = new NetTopologySuite.Geometries.Envelope(minX, maxX, minY, maxY);
             foreach (var document in batch)
@@ -518,13 +523,52 @@ namespace Work
                     }
                     else if (jp.Name == "roadRegistrationRoadLine")
                     {
+                        /*
+                        if (jp.Value != null)
+                        {
+                            line = rdr.Read(jp.Value.ToString());
+                            if (boundingBox.Intersects(line.EnvelopeInternal))
+                            {
+                                filteredBatch.Add(document);
+                            }
+                        }
+                        else
+                        {
+                            if (jp.Name == "roadRegistrationArea")
+                            {
+                                polygon = rdr.Read(jp.Value.ToString());
+                                {
+                                    if (boundingBox.Intersects(polygon.EnvelopeInternal))
+                                    {
+                                        filteredBatch.Add(document);
+                                    }
+                                }
+                            }
+                            
+                            else if (jp.Name == "roadRegistrationRoadConnectionPoints")
+                            {
+                                multipoint = rdr.Read(jp.Value.ToString());
+
+
+                                if (boundingBox.Intersects(multipoint.EnvelopeInternal))
+                                {
+                                    filteredBatch.Add(document);
+                                }
+                            }
+                            else if(jp.Name) 
+                            {
+
+                            }
+                            
+                        }
+                        */
                         //while (jp.Value != null)
-                        //{
+                        //{ 
                         if (jp.Value == null)
                         {
                             if (jp.Name == "roadRegistrationArea")
                             {
-                                var polygon = rdr.Read(jp.Value.ToString());
+                                polygon = rdr.Read(jp.Value.ToString());
                                 {
                                     if (boundingBox.Intersects(polygon.EnvelopeInternal))
                                     {
@@ -534,7 +578,7 @@ namespace Work
                             }
                             else if (jp.Name == "roadRegistrationRoadConnectionPoints")
                             {
-                                var multipoint = rdr.Read(jp.Value.ToString());
+                                multipoint = rdr.Read(jp.Value.ToString());
 
 
                                 if (boundingBox.Intersects(multipoint.EnvelopeInternal))
