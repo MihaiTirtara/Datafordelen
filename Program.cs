@@ -9,16 +9,12 @@ using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
-using System.Data.SqlClient;
-using System.Text;
 
-
-namespace Work
+namespace Datafordelen
 {
     class Program
     {
         static FTPClient client = new FTPClient();
-
 
         public static async Task Main(string[] args)
         {
