@@ -22,11 +22,7 @@ namespace Work
 
         public static async Task Main(string[] args)
         {
-            //await getinitialAdressData();
             await getLatestGeoData();
-            //await getLatestAdressData();
-
-
         }
 
         public static async Task getinitialAdressData()
@@ -34,7 +30,6 @@ namespace Work
             client.getAdressInitialLoad("https://selfservice.datafordeler.dk/filedownloads/626/334", @"/home/mehigh/ftptrials/adress.zip");
             client.UnzipFile(@"/home/mehigh/ftptrials/", @"/home/mehigh/ftptrials/");
             await ProcessLatestAdresses("/home/mehigh/ftptrials/", "/home/mehigh/newftp", 538913, 6182387, 568605, 6199152);
-
         }
 
         public static async Task getLatestAdressData()
@@ -44,12 +39,11 @@ namespace Work
             await ProcessLatestAdresses("/home/mehigh/ftptrials/", "/home/mehigh/newftp", 538913, 6182387, 568605, 6199152);
         }
 
-
         public static async Task getLatestGeoData()
         {
-            //await client.getFileFtp("ftp3.datafordeler.dk", "PCVZLGPTJE", "sWRbn2M8y2tH!", "/home/mehigh/geo/");
-            //client.UnzipFile(@"/home/mehigh/geo/", @"/home/mehigh/geo/geogml");
-            //convertToGeojson(new List<string>() { "trae", "bygning", "chikane", "erhverv", "bygvaerk", "systemlinje", "vejkant", "vejmidte" });
+            await client.getFileFtp("ftp3.datafordeler.dk", "PCVZLGPTJE", "sWRbn2M8y2tH!", "/home/mehigh/geo/");
+            client.UnzipFile(@"/home/mehigh/geo/", @"/home/mehigh/geo/geogml");
+            convertToGeojson(new List<string>() { "trae", "bygning", "chikane", "erhverv", "bygvaerk", "systemlinje", "vejkant", "vejmidte" });
             ProcessGeoDirectory(@"/home/mehigh/geo/", @"/home/mehigh/NewGeo/", new List<string>() { "trae", "bygning", "chikane", "erhverv", "bygvaerk", "systemlinje", "vejkant", "vejmidte" }, 538913, 6182387, 568605, 6199152);
         }
 
@@ -67,7 +61,6 @@ namespace Work
                 filterGeoPosition(fileName, minX, maxX, minY, maxY);
                 File.Move(fileName, dest);
             }
-
         }
 
         public static void convertToGeojson(List<string> list)
@@ -86,10 +79,8 @@ namespace Work
                 };
                 proc.Start();
                 proc.WaitForExit();
-
             }
         }
-
 
         public static async Task ProcessLatestAdresses(string sourceDirectory, string destinationDirectory, double minX, double minY, double maxX, double maxY)
         {
@@ -119,8 +110,6 @@ namespace Work
                     File.Move(filename, destFile);
                 }
             }
-            //List<String> fileEntries = Directory.GetFiles(rootDirectory).ToList();
-
         }
 
         public static string ChangeDateFormat(string dateString)
@@ -137,7 +126,6 @@ namespace Work
                 try
                 {
                     result = DateTime.Parse(dateString, null, System.Globalization.DateTimeStyles.RoundtripKind);
-                    //Console.WriteLine("{0} converts to {1}.", dateString, result.ToString("yyyy-MM-dd HH:mm:ss"));
                     return result.ToString("yyyy-MM-dd HH:mm:ss");
                 }
                 catch (ArgumentNullException)
@@ -159,7 +147,7 @@ namespace Work
             {
                 while (await reader.ReadAsync())
                 {
-                    // Advance the reader to start of first array, 
+                    // Advance the reader to start of first array,
                     // which should be value of the "Stores" property
                     var listName = "AdresseList";
                     if (reader.TokenType != JsonToken.StartArray)
@@ -184,13 +172,11 @@ namespace Work
                         if (reader.TokenType == JsonToken.StartObject)
                         {
                             dynamic obj = await JObject.LoadAsync(reader);
-                            //Console.WriteLine(obj);
-                            //jsonText.Add(JsonConvert.SerializeObject(obj, Formatting.Indented));
+
                             jsonText.Add(ChangeAdressNames(obj));
 
                             if (jsonText.Count >= 100000)
                             {
-
                                 if (listName.Equals("AdressepunktList"))
                                 {
                                     var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
@@ -198,11 +184,8 @@ namespace Work
                                     {
                                         adresspunktBatch.Add(b);
                                     }
-                                    //KafkaProducer(listName, boundingBatch);
-                                    //checkLatestData(boundingBatch);
-                                    //boundingBatch.Clear();
+
                                     jsonText.Clear();
-                                    //Console.WriteLine("Wrote 100000 objects into topic");
                                 }
                                 else if (listName.Equals("HusnummerList"))
                                 {
@@ -247,11 +230,7 @@ namespace Work
                                     jsonText.Clear();
                                     Console.WriteLine("Wrote 100000 objects into topic");
                                 }
-
-
                             }
-
-
                         }
                     }
 
@@ -262,15 +241,14 @@ namespace Work
                         {
                             adresspunktBatch.Add(b);
                         }
+
                         KafkaProducer(listName, boundingBatch);
                         boundingBatch.Clear();
                         jsonText.Clear();
-                        //Console.WriteLine("Wrote 100000 objects into topic");
                         Console.WriteLine("This is the adresspunkt inside loop " + adresspunktBatch.Count);
                     }
                     else if (listName.Equals("HusnummerList"))
                     {
-
                         foreach (var ob in jsonText)
                         {
                             hussnummerBatch.Add(ob);
@@ -290,7 +268,6 @@ namespace Work
                                     var newhus = JsonConvert.SerializeObject(ohus, Formatting.Indented);
                                     newHussnummerBatch.Add(newhus);
                                 }
-
                             }
                         }
 
@@ -298,8 +275,6 @@ namespace Work
                         adresspunktBatch.Clear();
                         hussnummerBatch.Clear();
                         newHussnummerBatch.Clear();
-
-
                     }
                     else if (listName.Equals("NavngivenVejList"))
                     {
@@ -317,8 +292,6 @@ namespace Work
                         jsonText.Clear();
                         Console.WriteLine("Wrote 100000 objects into topic");
                     }
-
-
                 }
             }
         }
@@ -404,17 +377,17 @@ namespace Work
                                 }
                             }
                         }
+
                         if (batch != null)
                         {
                             KafkaProducerGeo(topicname, batch);
                             batch.Clear();
                         }
                     }
-
                 }
             }
-
         }
+
         public static void KafkaProducer(String topicname, List<string> batch)
         {
             var config = new ProducerConfig { BootstrapServers = "localhost:9092", LingerMs = 5, BatchNumMessages = 100000, QueueBufferingMaxMessages = 100000 };
@@ -448,7 +421,6 @@ namespace Work
                 }
                 p.Flush(TimeSpan.FromSeconds(10));
                 Console.WriteLine(i);
-                //Console.WriteLine(topicname);
             }
         }
 
@@ -487,17 +459,12 @@ namespace Work
                             Console.WriteLine($"Delivery failed: {e.Error.Reason}");
                         }
 
-
-
-
                         p.Flush(TimeSpan.FromSeconds(10));
-                        //Console.WriteLine(topicname);
                     }
                 }
                 Console.WriteLine(i);
             }
         }
-
 
         public static List<string> newfilterAdressPosition(List<string> batch, double minX, double minY, double maxX, double maxY)
         {
@@ -549,13 +516,11 @@ namespace Work
                                     {
                                         filteredBatch.Add(document);
                                     }
-
                                 }
 
                                 else if (jp.Name == "roadRegistrationRoadConnectionPoints")
                                 {
                                     multipoint = rdr.Read(jp.Value.ToString());
-
 
                                     if (boundingBox.Intersects(multipoint.EnvelopeInternal))
                                     {
@@ -564,6 +529,7 @@ namespace Work
                                 }
                             }
                         }
+
                         /* Gets parse exception when they are values in both roadRegistrationRoadConnectionPoints and roadRegistrationArea,
                            also when they are null values in those fields
                         */
@@ -583,7 +549,6 @@ namespace Work
                             }
                             break;
                         }
-
                     }
                 }
             }
@@ -593,8 +558,6 @@ namespace Work
 
         public static string ChangeAdressNames(JObject jo)
         {
-            //Console.WriteLine("inside function");
-
             foreach (JProperty jp in jo.Properties().ToList())
             {
                 switch (jp.Name)
@@ -764,16 +727,12 @@ namespace Work
                         jp.Replace(new JProperty("postalCodeDistrict", jp.Value));
                         break;
                     default:
-                        //Console.WriteLine("wrong input");
                         break;
                 }
             }
+
             var obj = JsonConvert.SerializeObject(jo, Formatting.Indented);
             return obj;
-
         }
-
-
     }
-
 }
