@@ -10,30 +10,38 @@ using System.Diagnostics;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using Microsoft.Extensions.Configuration;
+using Datafordelen.Config;
 
 namespace Datafordelen
 {
     class Program
     {
-        static FTPClient client = new FTPClient();
+        private static FTPClient client = new FTPClient();
+        private static AppSettings _appSettings = new AppSettings();
 
         public static async Task Main(string[] args)
         {
-            // var builder = new ConfigurationBuilder()
-            //     .SetBasePath(Directory.GetCurrentDirectory())
-            //     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+            var builder = new ConfigurationBuilder()
+                .SetBasePath(Directory.GetCurrentDirectory())
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
-            // var configuration = builder.Build();
-            // ConfigurationBinder.Bind(configuration.GetSection("AppSettings"), appSettings);
+            var configuration = builder.Build();
+            ConfigurationBinder.Bind(configuration.GetSection("AppSettings"), appSettings);
 
             await getLatestGeoData();
         }
 
         public static async Task getinitialAdressData()
         {
-            client.getAdressInitialLoad("https://selfservice.datafordeler.dk/filedownloads/626/334", @"/home/mehigh/ftptrials/adress.zip");
-            client.UnzipFile(@"/home/mehigh/ftptrials/", @"/home/mehigh/ftptrials/");
-            await ProcessLatestAdresses("/home/mehigh/ftptrials/", "/home/mehigh/newftp", 538913, 6182387, 568605, 6199152);
+            client.getAdressInitialLoad(_appSettings.InitialAddressDataUrl, _appSettings.InitialAddressDataZipFilePath);
+            client.UnzipFile(_appSettings.IntialAddressDataUnzipPath, _appSettings.IntialAddressDataUnzipPath);
+            await ProcessLatestAdresses(
+                _appSettings.IntialAddressDataUnzipPath,
+                _appSettings.IntialAddressDataProcessedPath,
+                _appSettings.MinX,
+                _appSettings.MinY,
+                _appSettings.MaxX,
+                _appSettings.MaxY);
         }
 
         public static async Task getLatestAdressData()

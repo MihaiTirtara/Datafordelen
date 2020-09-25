@@ -22,4 +22,8 @@
     <PackageReference Include="System.ServiceModel.Syndication" Version="5.0.0-preview.6.20305.6" />
   </ItemGroup>
 
+  <ItemGroup>
+      <None Include="appsettings.json" CopyToOutputDirectory="Always" />
+  </ItemGroup>
+
 </Project>

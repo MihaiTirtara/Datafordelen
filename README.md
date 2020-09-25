@@ -21,6 +21,8 @@ The application has multiple functionalities which are separated into different 
 This method uses a web client to first retrieve a zip file with the data from a public atom feed, after that the data is unzipped and the method "ProcessLatestAdresses" goes through the files and adds them into a kafka topic. The producer can be observed below.
 #
 
+`
+
        public static void KafkaProducer(String topicname, List<String> batch)
         {
             var config = new ProducerConfig { BootstrapServers = "localhost:9092", LingerMs = 5, BatchNumMessages = 100000, QueueBufferingMaxMessages = 100000 };
