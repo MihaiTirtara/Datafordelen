@@ -9,6 +9,7 @@ using Newtonsoft.Json.Linq;
 using System.Diagnostics;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
+using Microsoft.Extensions.Configuration;
 
 namespace Datafordelen
 {
@@ -18,6 +19,13 @@ namespace Datafordelen
 
         public static async Task Main(string[] args)
         {
+            // var builder = new ConfigurationBuilder()
+            //     .SetBasePath(Directory.GetCurrentDirectory())
+            //     .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+
+            // var configuration = builder.Build();
+            // ConfigurationBinder.Bind(configuration.GetSection("AppSettings"), appSettings);
+
             await getLatestGeoData();
         }
 
