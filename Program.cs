@@ -506,6 +506,8 @@ namespace Work
             Geometry point;
             Geometry polygon;
             Geometry multipoint;
+            string name;
+            string value = "";
             WKTReader rdr = new WKTReader(geometryFactory);
             var boundingBox = new NetTopologySuite.Geometries.Envelope(minX, maxX, minY, maxY);
             foreach (var document in batch)
@@ -523,86 +525,63 @@ namespace Work
                     }
                     else if (jp.Name == "roadRegistrationRoadLine")
                     {
-                        /*
-                        if (jp.Value != null)
-                        {
-                            line = rdr.Read(jp.Value.ToString());
-                            if (boundingBox.Intersects(line.EnvelopeInternal))
-                            {
-                                filteredBatch.Add(document);
-                            }
-                        }
-                        else
-                        {
-                            if (jp.Name == "roadRegistrationArea")
-                            {
-                                polygon = rdr.Read(jp.Value.ToString());
-                                {
-                                    if (boundingBox.Intersects(polygon.EnvelopeInternal))
-                                    {
-                                        filteredBatch.Add(document);
-                                    }
-                                }
-                            }
-                            
-                            else if (jp.Name == "roadRegistrationRoadConnectionPoints")
-                            {
-                                multipoint = rdr.Read(jp.Value.ToString());
-
-
-                                if (boundingBox.Intersects(multipoint.EnvelopeInternal))
-                                {
-                                    filteredBatch.Add(document);
-                                }
-                            }
-                            else if(jp.Name) 
-                            {
-
-                            }
-                            
-                        }
-                        */
-                        //while (jp.Value != null)
-                        //{ 
-                        if (jp.Value == null)
-                        {
-                            if (jp.Name == "roadRegistrationArea")
-                            {
-                                polygon = rdr.Read(jp.Value.ToString());
-                                {
-                                    if (boundingBox.Intersects(polygon.EnvelopeInternal))
-                                    {
-                                        filteredBatch.Add(document);
-                                    }
-                                }
-                            }
-                            else if (jp.Name == "roadRegistrationRoadConnectionPoints")
-                            {
-                                multipoint = rdr.Read(jp.Value.ToString());
-
-
-                                if (boundingBox.Intersects(multipoint.EnvelopeInternal))
-                                {
-                                    filteredBatch.Add(document);
-                                }
-
-                            }
-                        }
                         try
                         {
-                            line = rdr.Read(jp.Value.ToString());
-                            if (boundingBox.Intersects(line.EnvelopeInternal))
+                            if (jp.Value != null)
                             {
-                                filteredBatch.Add(document);
+                                line = rdr.Read(jp.Value.ToString());
+                                if (boundingBox.Intersects(line.EnvelopeInternal))
+                                {
+                                    filteredBatch.Add(document);
+                                }
+                            }
+                            else
+                            {
+                                if (jp.Name == "roadRegistrationRoadArea")
+                                {
+                                    name = jp.Name;
+                                    value = (string)jp.Value;
+                                    polygon = rdr.Read(jp.Value.ToString());
+
+                                    if (boundingBox.Intersects(polygon.EnvelopeInternal))
+                                    {
+                                        filteredBatch.Add(document);
+                                    }
+
+                                }
+
+                                else if (jp.Name == "roadRegistrationRoadConnectionPoints")
+                                {
+                                    multipoint = rdr.Read(jp.Value.ToString());
+
+
+                                    if (boundingBox.Intersects(multipoint.EnvelopeInternal))
+                                    {
+                                        filteredBatch.Add(document);
+                                    }
+                                }
                             }
                         }
+                        /* Gets parse exception when they are values in both roadRegistrationRoadConnectionPoints and roadRegistrationArea,
+                           also when they are null values in those fields
+                        */
                         catch (NetTopologySuite.IO.ParseException e)
                         {
                             Console.WriteLine("Error writing data: {0}.", e.GetType().Name);
                             Console.WriteLine(document);
+                            JObject obj = JObject.Parse(document);
+                            if (String.IsNullOrEmpty(obj["roadRegistrationRoadArea"].ToString()) == false & (String.IsNullOrEmpty(obj["roadRegistrationRoadConnectionPoints"].ToString()) == false))
+                            {
+                                polygon = rdr.Read((string)obj["roadRegistrationRoadArea"]);
+                                if (boundingBox.Intersects(polygon.EnvelopeInternal))
+                                {
+                                    filteredBatch.Add(document);
+                                    Console.WriteLine("document added");
+                                }
+                            }
                             break;
                         }
-                        //}
+
                     }
                 }
             }
