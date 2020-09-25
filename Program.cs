@@ -23,8 +23,8 @@ namespace Work
         public static async Task Main(string[] args)
         {
             //await getinitialAdressData();
-            //await getLatestGeoData();
-            await getLatestAdressData();
+            await getLatestGeoData();
+            //await getLatestAdressData();
 
 
         }
@@ -366,9 +366,8 @@ namespace Work
                                                 //Console.WriteLine("This is one object " + be.ToString());
                                                 var jsonObj = new
                                                 {
-
-                                                    id_lokalId = atr.GetOptionalValue("id_lokalid"),
                                                     gml_id = atr.GetOptionalValue("gml_id"),
+                                                    id_lokalId = atr.GetOptionalValue("id_lokalid"),
                                                     geo = geo.ToString()
                                                 };
                                                 jsonDoc = JsonConvert.SerializeObject(jsonObj);
@@ -382,6 +381,7 @@ namespace Work
                                                 }
                                             }
                                         }
+                                        //Loop gives reader exception when it reaches the last element from the file
                                         catch (Newtonsoft.Json.JsonReaderException e)
                                         {
                                             Console.WriteLine("Error writing data: {0}.", e.GetType().Name);
@@ -389,13 +389,15 @@ namespace Work
                                             var atr = feature.Attributes;
                                             var jsonObj = new
                                             {
-
-                                                id_lokalId = atr.GetOptionalValue("id_lokalid"),
                                                 gml_id = atr.GetOptionalValue("gml_id"),
+                                                id_lokalId = atr.GetOptionalValue("id_lokalid"),
                                                 geo = geo.ToString()
                                             };
                                             jsonDoc = JsonConvert.SerializeObject(jsonObj);
-                                            Console.WriteLine(jsonDoc);
+                                            batch.Add(jsonDoc);
+                                            KafkaProducerGeo(topicname, batch);
+                                            batch.Clear();
+                                            Console.WriteLine("Document has been added");
                                             break;
                                         }
                                     }
