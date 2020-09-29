@@ -9,6 +9,7 @@ using Datafordelen.Kafka;
 using Datafordelen.Ftp;
 using System.Diagnostics;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 
 namespace Datafordelen.GeoData
 {
@@ -17,10 +18,12 @@ namespace Datafordelen.GeoData
         private readonly AppSettings _appSettings;
         private readonly FTPClient _client;
         private readonly KafkaProducer _producer;
+        private readonly ILogger<GeoDataService> _logger;
 
-        public GeoDataService(IOptions<AppSettings> appSettings)
+        public GeoDataService(IOptions<AppSettings> appSettings, ILogger<GeoDataService> logger)
         {
             _appSettings = appSettings.Value;
+            _logger = logger;
             _client = new FTPClient();
             _producer = new KafkaProducer(_appSettings);
         }
@@ -49,7 +52,7 @@ namespace Datafordelen.GeoData
 
             foreach (string fileName in result)
             {
-                Console.WriteLine(fileName);
+                _logger.LogInformation(fileName);
                 var fileNoExtension = Path.GetFileNameWithoutExtension(fileName);
                 var dest = Path.Combine(destinationDirectory, fileNoExtension + ".json");
                 filterGeoPosition(fileName, minX, maxX, minY, maxY);
@@ -138,7 +141,7 @@ namespace Datafordelen.GeoData
                                         //Loop gives reader exception when it reaches the last element from the file
                                         catch (Newtonsoft.Json.JsonReaderException e)
                                         {
-                                            Console.WriteLine("Error writing data: {0}.", e.GetType().Name);
+                                            _logger.LogError("Error writing data: {0}.", e.GetType().Name);
                                             var geo = feature.Geometry;
                                             var atr = feature.Attributes;
                                             var jsonObj = new
