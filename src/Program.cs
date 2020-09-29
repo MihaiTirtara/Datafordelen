@@ -47,17 +47,17 @@ namespace Datafordelen
 
         public static async Task getLatestAdressData()
         {
-            await client.getFileFtp(_appSettings.ftpServer, _appSettings.adressUsername, _appSettings.adressPassword, _appSettings.InitialAddressDataUnzipPath);
+            await client.getFileFtp(_appSettings.ftpServer, _appSettings.adressUserName, _appSettings.adressPassword, _appSettings.InitialAddressDataUnzipPath);
             client.UnzipFile(_appSettings.InitialAddressDataUnzipPath, _appSettings.InitialAddressDataUnzipPath);
             await ProcessLatestAdresses(_appSettings.InitialAddressDataUnzipPath,  _appSettings.InitialAddressDataProcessedPath,  _appSettings.MinX,   _appSettings.MinY,   _appSettings.MaxX, _appSettings.MaxY);
         }
 
         public static async Task getLatestGeoData()
         {
-            await client.getFileFtp("ftp3.datafordeler.dk", "PCVZLGPTJE", "sWRbn2M8y2tH!", "/home/mehigh/geo/");
-            client.UnzipFile(@"/home/mehigh/geo/", @"/home/mehigh/geo/geogml");
-            convertToGeojson(new List<string>() { "trae", "bygning", "chikane", "erhverv", "bygvaerk", "systemlinje", "vejkant", "vejmidte" });
-            ProcessGeoDirectory(@"/home/mehigh/geo/", @"/home/mehigh/NewGeo/", new List<string>() { "trae", "bygning", "chikane", "erhverv", "bygvaerk", "systemlinje", "vejkant", "vejmidte" }, 538913, 6182387, 568605, 6199152);
+            await client.getFileFtp(_appSettings.ftpServer, _appSettings.geoUserName, _appSettings.geoPassword, _appSettings.geoUnzipPath);
+            client.UnzipFile(_appSettings.geoUnzipPath, _appSettings.geoGmlPath);
+            convertToGeojson(_appSettings.geoFieldList);
+            ProcessGeoDirectory(_appSettings.geoUnzipPath,_appSettings.geoProcessedPath, _appSettings.geoFieldList, _appSettings.MinX, _appSettings.MinY, _appSettings.MaxX, _appSettings.MaxY);
         }
 
         public static void ProcessGeoDirectory(string sourceDirectory, string destinationDirectory, List<String> geoFilter, double minX, double minY, double maxX, double maxY)
