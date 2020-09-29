@@ -8,18 +8,19 @@ using Datafordelen.Config;
 using Datafordelen.Kafka;
 using Datafordelen.Ftp;
 using System.Diagnostics;
+using Microsoft.Extensions.Options;
 
 namespace Datafordelen.GeoData
 {
-    public class GeoDataService
+    public class GeoDataService : IGeoDataService
     {
         private readonly AppSettings _appSettings;
         private readonly FTPClient _client;
         private readonly KafkaProducer _producer;
 
-        public GeoDataService(AppSettings appSettings)
+        public GeoDataService(IOptions<AppSettings> appSettings)
         {
-            _appSettings = appSettings;
+            _appSettings = appSettings.Value;
             _client = new FTPClient();
             _producer = new KafkaProducer(_appSettings);
         }

@@ -10,18 +10,19 @@ using Datafordelen.Kafka;
 using Datafordelen.Ftp;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
+using Microsoft.Extensions.Options;
 
 namespace Datafordelen.Address
 {
-    public class AddressService
+    public class AddressService : IAddressService
     {
         private readonly AppSettings _appSettings;
         private FTPClient _client;
         private KafkaProducer _kafkaProducer;
 
-        public AddressService(AppSettings appSettings)
+        public AddressService(IOptions<AppSettings> appSettings)
         {
-            _appSettings = appSettings;
+            _appSettings = appSettings.Value;
             _client = new FTPClient();
             _kafkaProducer = new KafkaProducer(_appSettings);
         }

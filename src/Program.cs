@@ -1,9 +1,8 @@
 ﻿using System.IO;
 using System.Threading.Tasks;
-using Microsoft.Extensions.Configuration;
-using Datafordelen.Config;
-using Datafordelen.GeoData;
-using Datafordelen.Address;
+using Datafordelen.Internal;
+using Microsoft.Extensions.DependencyInjection;
+
 
 namespace Datafordelen
 {
@@ -11,21 +10,9 @@ namespace Datafordelen
     {
         public static async Task Main(string[] args)
         {
-            var builder = new ConfigurationBuilder()
-                .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
-
-            var appSettings = new AppSettings();
-
-            var configuration = builder.Build();
-            ConfigurationBinder.Bind(configuration.GetSection("appSettings"), appSettings);
-
-            var addressService = new AddressService(appSettings);
-            var geoDataService = new GeoDataService(appSettings);
-
-            await addressService.GetinitialAddressData();
-            await addressService.GetLatestAddressData();
-            await geoDataService.GetLatestGeoData();
+            using var serviceProvider = Setup.Configure();
+            var startup = serviceProvider.GetService<Startup>();
+            await startup.StartAsync();
         }
     }
 }
