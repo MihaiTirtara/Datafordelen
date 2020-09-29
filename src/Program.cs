@@ -9,8 +9,6 @@ namespace Datafordelen
 {
     class Program
     {
-        private static FTPClient client = new FTPClient();
-
         public static async Task Main(string[] args)
         {
             var builder = new ConfigurationBuilder()
@@ -26,6 +24,8 @@ namespace Datafordelen
             var geoDataService = new GeoDataService(appSettings);
 
             await addressService.GetinitialAddressData();
+            await addressService.GetLatestAddressData();
+            await geoDataService.GetLatestGeoData();
         }
     }
 }

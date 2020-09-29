@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using Newtonsoft.Json;
 using Datafordelen.Config;
 using Datafordelen.Kafka;
+using Datafordelen.Ftp;
 using System.Diagnostics;
 
 namespace Datafordelen.GeoData
@@ -23,9 +24,9 @@ namespace Datafordelen.GeoData
             _producer = new KafkaProducer();
         }
 
-        public async Task getLatestGeoData()
+        public async Task GetLatestGeoData()
         {
-            await _client.getFileFtp(_appSettings.ftpServer, _appSettings.geoUserName, _appSettings.geoPassword, _appSettings.geoUnzipPath);
+            await _client.GetFileFtp(_appSettings.ftpServer, _appSettings.geoUserName, _appSettings.geoPassword, _appSettings.geoUnzipPath);
             _client.UnzipFile(_appSettings.geoUnzipPath, _appSettings.geoGmlPath);
             convertToGeojson(_appSettings.geoFieldList);
             Console.WriteLine(_appSettings.geoUnzipPath);
