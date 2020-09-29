@@ -28,7 +28,7 @@ namespace Datafordelen
             var configuration = builder.Build();
             ConfigurationBinder.Bind(configuration.GetSection("appSettings"), _appSettings);
 
-            await getinitialAdressData();
+            await getLatestAdressData();
         }
 
         public static async Task getinitialAdressData()
@@ -49,7 +49,13 @@ namespace Datafordelen
         {
             await client.getFileFtp(_appSettings.ftpServer, _appSettings.adressUserName, _appSettings.adressPassword, _appSettings.InitialAddressDataUnzipPath);
             client.UnzipFile(_appSettings.InitialAddressDataUnzipPath, _appSettings.InitialAddressDataUnzipPath);
-            await ProcessLatestAdresses(_appSettings.InitialAddressDataUnzipPath,  _appSettings.InitialAddressDataProcessedPath,  _appSettings.MinX,   _appSettings.MinY,   _appSettings.MaxX, _appSettings.MaxY);
+            await ProcessLatestAdresses(
+                _appSettings.InitialAddressDataUnzipPath,
+                _appSettings.InitialAddressDataProcessedPath,
+                _appSettings.MinX,
+                _appSettings.MinY,
+                _appSettings.MaxX,
+                _appSettings.MaxY);
         }
 
         public static async Task getLatestGeoData()
@@ -57,7 +63,13 @@ namespace Datafordelen
             await client.getFileFtp(_appSettings.ftpServer, _appSettings.geoUserName, _appSettings.geoPassword, _appSettings.geoUnzipPath);
             client.UnzipFile(_appSettings.geoUnzipPath, _appSettings.geoGmlPath);
             convertToGeojson(_appSettings.geoFieldList);
-            ProcessGeoDirectory(_appSettings.geoUnzipPath,_appSettings.geoProcessedPath, _appSettings.geoFieldList, _appSettings.MinX, _appSettings.MinY, _appSettings.MaxX, _appSettings.MaxY);
+            ProcessGeoDirectory(_appSettings.geoUnzipPath,
+             _appSettings.geoProcessedPath,
+             _appSettings.geoFieldList,
+             _appSettings.MinX,
+             _appSettings.MinY,
+             _appSettings.MaxX,
+             _appSettings.MaxY);
         }
 
         public static void ProcessGeoDirectory(string sourceDirectory, string destinationDirectory, List<String> geoFilter, double minX, double minY, double maxX, double maxY)
