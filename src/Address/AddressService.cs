@@ -23,7 +23,7 @@ namespace Datafordelen.Address
         {
             _appSettings = appSettings;
             _client = new FTPClient();
-            _kafkaProducer = new KafkaProducer();
+            _kafkaProducer = new KafkaProducer(_appSettings);
         }
 
         public async Task GetinitialAddressData()

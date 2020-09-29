@@ -3,14 +3,22 @@ using System;
 using System.Linq;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
+using Datafordelen.Config;
 
 namespace Datafordelen.Kafka
 {
     public class KafkaProducer
     {
+        private readonly AppSettings _appSettings;
+
+        public KafkaProducer(AppSettings appSettings)
+        {
+            _appSettings = appSettings;
+        }
+
         public void Produce(string topicname, List<string> batch)
         {
-            var config = new ProducerConfig { BootstrapServers = "localhost:9092", LingerMs = 5, BatchNumMessages = 100000, QueueBufferingMaxMessages = 100000 };
+            var config = new ProducerConfig { BootstrapServers = _appSettings.KafkaBootstrapServer, LingerMs = 5, BatchNumMessages = 100000, QueueBufferingMaxMessages = 100000 };
             var i = 0;
 
             using (var p = new ProducerBuilder<string, string>(config).Build())

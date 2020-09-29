@@ -21,7 +21,7 @@ namespace Datafordelen.GeoData
         {
             _appSettings = appSettings;
             _client = new FTPClient();
-            _producer = new KafkaProducer();
+            _producer = new KafkaProducer(_appSettings);
         }
 
         public async Task GetLatestGeoData()
