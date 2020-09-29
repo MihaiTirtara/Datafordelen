@@ -42,7 +42,7 @@ namespace Datafordelen.Address
 
         public async Task GetLatestAddressData()
         {
-            await _client.GetFileFtp(_appSettings.ftpServer, _appSettings.adressUserName, _appSettings.adressPassword, _appSettings.InitialAddressDataUnzipPath);
+            await _client.GetFileFtp(_appSettings.FtpServer, _appSettings.AddressUserName, _appSettings.AddressPassword, _appSettings.InitialAddressDataUnzipPath);
             _client.UnzipFile(_appSettings.InitialAddressDataUnzipPath, _appSettings.InitialAddressDataUnzipPath);
             await ProcessLatestAdresses(
                 _appSettings.InitialAddressDataUnzipPath,

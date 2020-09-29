@@ -26,14 +26,14 @@ namespace Datafordelen.GeoData
 
         public async Task GetLatestGeoData()
         {
-            await _client.GetFileFtp(_appSettings.ftpServer, _appSettings.geoUserName, _appSettings.geoPassword, _appSettings.geoUnzipPath);
-            _client.UnzipFile(_appSettings.geoUnzipPath, _appSettings.geoGmlPath);
-            convertToGeojson(_appSettings.geoFieldList);
-            Console.WriteLine(_appSettings.geoUnzipPath);
-            Console.WriteLine(_appSettings.geoFieldList);
-            ProcessGeoDirectory(_appSettings.geoUnzipPath,
-             _appSettings.geoProcessedPath,
-             _appSettings.geoFieldList,
+            await _client.GetFileFtp(_appSettings.FtpServer, _appSettings.GeoUserName, _appSettings.GeoPassword, _appSettings.GeoUnzipPath);
+            _client.UnzipFile(_appSettings.GeoUnzipPath, _appSettings.GeoGmlPath);
+            convertToGeojson(_appSettings.GeoFieldList);
+            Console.WriteLine(_appSettings.GeoUnzipPath);
+            Console.WriteLine(_appSettings.GeoFieldList);
+            ProcessGeoDirectory(_appSettings.GeoUnzipPath,
+             _appSettings.GeoProcessedPath,
+             _appSettings.GeoFieldList,
              _appSettings.MinX,
              _appSettings.MinY,
              _appSettings.MaxX,

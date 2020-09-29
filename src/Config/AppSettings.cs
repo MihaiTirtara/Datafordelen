@@ -14,23 +14,23 @@ namespace Datafordelen.Config
         public double MinY { get; set; }
         public double MaxY { get; set; }
 
-        public string ftpServer { get; set; }
+        public string FtpServer { get; set; }
 
-        public string adressUserName { get; set; }
+        public string AddressUserName { get; set; }
 
-        public string adressPassword { get; set; }
+        public string AddressPassword { get; set; }
 
-        public string geoUserName { get; set; }
+        public string GeoUserName { get; set; }
 
-        public string geoPassword { get; set; }
+        public string GeoPassword { get; set; }
 
-        public string geoUnzipPath { get; set; }
+        public string GeoUnzipPath { get; set; }
 
-        public string geoGmlPath { get; set; }
+        public string GeoGmlPath { get; set; }
 
-        public string geoProcessedPath { get; set; }
+        public string GeoProcessedPath { get; set; }
 
-        public List<string> geoFieldList { get; set; }
+        public List<string> GeoFieldList { get; set; }
 
         public string KafkaBootstrapServer { get; set; }
     }
