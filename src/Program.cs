@@ -28,7 +28,7 @@ namespace Datafordelen
             var configuration = builder.Build();
             ConfigurationBinder.Bind(configuration.GetSection("appSettings"), _appSettings);
 
-            await getLatestGeoData();
+            await getLatestAdressData();
         }
 
         public static async Task getinitialAdressData()
@@ -60,9 +60,9 @@ namespace Datafordelen
 
         public static async Task getLatestGeoData()
         {
-            //await client.getFileFtp(_appSettings.ftpServer, _appSettings.geoUserName, _appSettings.geoPassword, _appSettings.geoUnzipPath);
-            //client.UnzipFile(_appSettings.geoUnzipPath, _appSettings.geoGmlPath);
-            //convertToGeojson(_appSettings.geoFieldList);
+            await client.getFileFtp(_appSettings.ftpServer, _appSettings.geoUserName, _appSettings.geoPassword, _appSettings.geoUnzipPath);
+            client.UnzipFile(_appSettings.geoUnzipPath, _appSettings.geoGmlPath);
+            convertToGeojson(_appSettings.geoFieldList);
             Console.WriteLine(_appSettings.geoUnzipPath);
             Console.WriteLine(_appSettings.geoFieldList);
             ProcessGeoDirectory(_appSettings.geoUnzipPath,
