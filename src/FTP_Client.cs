@@ -11,12 +11,7 @@ using System.Collections.Generic;
 
 public class FTPClient
 {
-    public FTPClient()
-    {
-
-    }
-
-    public  void getAdressInitialLoad(String url, String filepath)
+    public void getAdressInitialLoad(String url, String filepath)
     {
         String downloadLink = String.Empty;
         String[] feedwords = null;
@@ -39,10 +34,9 @@ public class FTPClient
         WebClient client = new WebClient();
         client.DownloadFile(
             downloadLink, filepath);
-
     }
 
-    public  async Task getFileFtp(string host, string userName, string password, string path)
+    public async Task getFileFtp(string host, string userName, string password, string path)
     {
         FtpClient client = new FtpClient(host);
 
@@ -61,7 +55,7 @@ public class FTPClient
             {
 
                 //Check if the file already exists in the local path
-                 if ( await client.CompareFileAsync(path + item.FullName, "/" + item.FullName,FtpCompareOption.Size) == FtpCompareResult.Equal)
+                if (await client.CompareFileAsync(path + item.FullName, "/" + item.FullName, FtpCompareOption.Size) == FtpCompareResult.Equal)
                 {
                     Console.WriteLine("item already exists " + item.FullName);
                 }
@@ -75,12 +69,12 @@ public class FTPClient
         await client.DisconnectAsync();
     }
 
-    public  void UnzipFile(String path, String extractPath)
+    public void UnzipFile(String path, String extractPath)
     {
         List<String> fileEntries = Directory.GetFiles(path).ToList();
-        foreach(var file in fileEntries)
+        foreach (var file in fileEntries)
         {
-            if(file.Contains(".zip"))
+            if (file.Contains(".zip"))
             {
                 ZipFile.ExtractToDirectory(file, extractPath);
                 File.Delete(file);
@@ -89,9 +83,6 @@ public class FTPClient
             {
                 Console.WriteLine("File already unzipped");
             }
-         
-
         }
     }
-
-} 
+}
