@@ -26,18 +26,19 @@ namespace Datafordelen
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
 
             var configuration = builder.Build();
-            ConfigurationBinder.Bind(configuration.GetSection("AppSettings"), appSettings);
+            ConfigurationBinder.Bind(configuration.GetSection("appSettings"), _appSettings);
 
-            await getLatestGeoData();
+            await getinitialAdressData();
         }
 
         public static async Task getinitialAdressData()
         {
+            Console.WriteLine("this is the uri" + _appSettings.InitialAddressDataUrl);
             client.getAdressInitialLoad(_appSettings.InitialAddressDataUrl, _appSettings.InitialAddressDataZipFilePath);
-            client.UnzipFile(_appSettings.IntialAddressDataUnzipPath, _appSettings.IntialAddressDataUnzipPath);
+            client.UnzipFile(_appSettings.InitialAddressDataUnzipPath, _appSettings.InitialAddressDataUnzipPath);
             await ProcessLatestAdresses(
-                _appSettings.IntialAddressDataUnzipPath,
-                _appSettings.IntialAddressDataProcessedPath,
+                _appSettings.InitialAddressDataUnzipPath,
+                _appSettings.InitialAddressDataProcessedPath,
                 _appSettings.MinX,
                 _appSettings.MinY,
                 _appSettings.MaxX,
@@ -46,9 +47,9 @@ namespace Datafordelen
 
         public static async Task getLatestAdressData()
         {
-            await client.getFileFtp("ftp3.datafordeler.dk", "JFOWRLSDKM", "sWRbn2M8y2tH!", "/home/mehigh/ftptrials/");
-            client.UnzipFile(@"/home/mehigh/ftptrials/", @"/home/mehigh/ftptrials/");
-            await ProcessLatestAdresses("/home/mehigh/ftptrials/", "/home/mehigh/newftp", 538913, 6182387, 568605, 6199152);
+            await client.getFileFtp(_appSettings.ftpServer, _appSettings.adressUsername, _appSettings.adressPassword, _appSettings.InitialAddressDataUnzipPath);
+            client.UnzipFile(_appSettings.InitialAddressDataUnzipPath, _appSettings.InitialAddressDataUnzipPath);
+            await ProcessLatestAdresses(_appSettings.InitialAddressDataUnzipPath,  _appSettings.InitialAddressDataProcessedPath,  _appSettings.MinX,   _appSettings.MinY,   _appSettings.MaxX, _appSettings.MaxY);
         }
 
         public static async Task getLatestGeoData()
