@@ -28,7 +28,7 @@ namespace Datafordelen
             var configuration = builder.Build();
             ConfigurationBinder.Bind(configuration.GetSection("appSettings"), _appSettings);
 
-            await getLatestAdressData();
+            await getLatestGeoData();
         }
 
         public static async Task getinitialAdressData()
@@ -60,9 +60,11 @@ namespace Datafordelen
 
         public static async Task getLatestGeoData()
         {
-            await client.getFileFtp(_appSettings.ftpServer, _appSettings.geoUserName, _appSettings.geoPassword, _appSettings.geoUnzipPath);
-            client.UnzipFile(_appSettings.geoUnzipPath, _appSettings.geoGmlPath);
-            convertToGeojson(_appSettings.geoFieldList);
+            //await client.getFileFtp(_appSettings.ftpServer, _appSettings.geoUserName, _appSettings.geoPassword, _appSettings.geoUnzipPath);
+            //client.UnzipFile(_appSettings.geoUnzipPath, _appSettings.geoGmlPath);
+            //convertToGeojson(_appSettings.geoFieldList);
+            Console.WriteLine(_appSettings.geoUnzipPath);
+            Console.WriteLine(_appSettings.geoFieldList);
             ProcessGeoDirectory(_appSettings.geoUnzipPath,
              _appSettings.geoProcessedPath,
              _appSettings.geoFieldList,
@@ -374,7 +376,7 @@ namespace Datafordelen
                                                 batch.Add(jsonDoc);
                                                 if (batch.Count >= 5000)
                                                 {
-                                                    KafkaProducerGeo(topicname, batch);
+                                                    KafkaProducer(topicname, batch);
                                                     batch.Clear();
                                                 }
                                             }
@@ -393,7 +395,7 @@ namespace Datafordelen
                                             };
                                             jsonDoc = JsonConvert.SerializeObject(jsonObj);
                                             batch.Add(jsonDoc);
-                                            KafkaProducerGeo(topicname, batch);
+                                            KafkaProducer(topicname, batch);
                                             batch.Clear();
                                             Console.WriteLine("Document has been added");
                                             break;
@@ -405,7 +407,7 @@ namespace Datafordelen
 
                         if (batch != null)
                         {
-                            KafkaProducerGeo(topicname, batch);
+                            KafkaProducer(topicname, batch);
                             batch.Clear();
                         }
                     }
@@ -426,12 +428,13 @@ namespace Datafordelen
                     String id = String.Empty;
                     JObject o = JObject.Parse(document);
 
-                    foreach (JProperty jp in o.Properties().ToList())
+                    if(o["gml_id"]!=null)
                     {
-                        if (jp.Name == "id_lokalId")
-                        {
-                            id = (string)jp.Value;
-                        }
+                        id = (string)o["gml_id"];
+                    }
+                    else
+                    {
+                        id = (string)o["id_lokalId"];
                     }
 
                     try
@@ -449,47 +452,6 @@ namespace Datafordelen
             }
         }
 
-
-        public static void KafkaProducerGeo(String topicname, List<string> batch)
-        {
-            var config = new ProducerConfig { BootstrapServers = "localhost:9092", LingerMs = 5, BatchNumMessages = 100000, QueueBufferingMaxMessages = 100000 };
-            int i = 0;
-            using (var p = new ProducerBuilder<string, string>(config).Build())
-            {
-                Console.WriteLine(topicname);
-                Console.WriteLine(batch.Count());
-                i += 10000;
-
-                if (batch.Count > 0)
-                {
-                    foreach (var document in batch)
-                    {
-                        String id = String.Empty;
-
-                        JObject o = JObject.Parse(document);
-                        //Console.Write(o);
-                        foreach (JProperty jp in o.Properties().ToList())
-                        {
-                            if (jp.Name == "id_lokalId")
-                            {
-                                id = (String)jp.Value;
-                            }
-                        }
-                        try
-                        {
-                            p.Produce(topicname, new Message<string, string> { Value = document, Key = id });
-                        }
-                        catch (ProduceException<Null, string> e)
-                        {
-                            Console.WriteLine($"Delivery failed: {e.Error.Reason}");
-                        }
-
-                        p.Flush(TimeSpan.FromSeconds(10));
-                    }
-                }
-                Console.WriteLine(i);
-            }
-        }
 
         public static List<string> newfilterAdressPosition(List<string> batch, double minX, double minY, double maxX, double maxY)
         {
