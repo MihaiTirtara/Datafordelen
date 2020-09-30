@@ -17,10 +17,10 @@ namespace Datafordelen.GeoData
     {
         private readonly AppSettings _appSettings;
         private readonly IFTPClient _client;
-        private readonly IKakfkaProducer _producer;
+        private readonly IKafkaProducer _producer;
         private readonly ILogger<GeoDataService> _logger;
 
-        public GeoDataService(IOptions<AppSettings> appSettings, ILogger<GeoDataService> logger, IKakfkaProducer kakfkaProducer, IFTPClient ftpClient)
+        public GeoDataService(IOptions<AppSettings> appSettings, ILogger<GeoDataService> logger, IKafkaProducer kakfkaProducer, IFTPClient ftpClient)
         {
             _appSettings = appSettings.Value;
             _logger = logger;

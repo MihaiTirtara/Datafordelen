@@ -18,9 +18,9 @@ namespace Datafordelen.Address
     {
         private readonly AppSettings _appSettings;
         private IFTPClient _client;
-        private IKakfkaProducer _kafkaProducer;
+        private IKafkaProducer _kafkaProducer;
 
-        public AddressService(IOptions<AppSettings> appSettings, IFTPClient ftpClient, IKakfkaProducer kafkaProducer)
+        public AddressService(IOptions<AppSettings> appSettings, IFTPClient ftpClient, IKafkaProducer kafkaProducer)
         {
             _appSettings = appSettings.Value;
             _client = ftpClient;

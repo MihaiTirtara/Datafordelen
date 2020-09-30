@@ -37,7 +37,7 @@ namespace Datafordelen.Internal
             serviceCollection.AddSingleton<IGeoDataService, GeoDataService>();
             serviceCollection.AddSingleton<IAddressService, AddressService>();
             serviceCollection.AddSingleton<IFTPClient,FTPClient>();
-            serviceCollection.AddSingleton<IKakfkaProducer,KafkaProducer>();
+            serviceCollection.AddSingleton<IKafkaProducer,KafkaProducer>();
             serviceCollection.AddLogging();
         }
     }

@@ -8,7 +8,7 @@ using Microsoft.Extensions.Options;
 
 namespace Datafordelen.Kafka
 {
-    public class KafkaProducer:IKakfkaProducer
+    public class KafkaProducer:IKafkaProducer
     {
         private readonly AppSettings _appSettings;
 

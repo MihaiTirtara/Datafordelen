@@ -2,7 +2,7 @@ using System.Collections.Generic;
 
 namespace Datafordelen.Kafka
 {
-     public interface IKakfkaProducer
+     public interface IKafkaProducer
      {
         void Produce(string topicname, List<string> batch);
 
