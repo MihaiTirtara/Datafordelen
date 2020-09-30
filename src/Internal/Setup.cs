@@ -5,6 +5,7 @@ using Datafordelen.Address;
 using Datafordelen.GeoData;
 using Datafordelen.Config;
 using Datafordelen.Ftp;
+using Datafordelen.Kafka;
 
 namespace Datafordelen.Internal
 {
@@ -36,6 +37,7 @@ namespace Datafordelen.Internal
             serviceCollection.AddSingleton<IGeoDataService, GeoDataService>();
             serviceCollection.AddSingleton<IAddressService, AddressService>();
             serviceCollection.AddSingleton<IFTPClient,FTPClient>();
+            serviceCollection.AddSingleton<IKakfkaProducer,KafkaProducer>();
             serviceCollection.AddLogging();
         }
     }

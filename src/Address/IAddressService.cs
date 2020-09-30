@@ -4,7 +4,7 @@ namespace Datafordelen.Address
 {
     public interface IAddressService
     {
-        public Task GetinitialAddressData();
-        public Task GetLatestAddressData();
+        Task GetinitialAddressData();
+        Task GetLatestAddressData();
     }
 }

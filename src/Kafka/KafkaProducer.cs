@@ -7,7 +7,7 @@ using Datafordelen.Config;
 
 namespace Datafordelen.Kafka
 {
-    public class KafkaProducer
+    public class KafkaProducer:IKakfkaProducer
     {
         private readonly AppSettings _appSettings;
 
