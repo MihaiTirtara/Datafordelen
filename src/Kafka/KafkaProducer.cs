@@ -5,16 +5,19 @@ using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using Datafordelen.Config;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
 
 namespace Datafordelen.Kafka
 {
-    public class KafkaProducer:IKafkaProducer
+    public class KafkaProducer : IKafkaProducer
     {
         private readonly AppSettings _appSettings;
+        private readonly ILogger<KafkaProducer> _logger;
 
-        public KafkaProducer(IOptions<AppSettings> appSettings)
+        public KafkaProducer(IOptions<AppSettings> appSettings, ILogger<KafkaProducer> logger)
         {
             _appSettings = appSettings.Value;
+            _logger = logger;
         }
 
         public void Produce(string topicname, List<string> batch)
@@ -46,12 +49,13 @@ namespace Datafordelen.Kafka
                     }
                     catch (ProduceException<Null, string> e)
                     {
-                        Console.WriteLine($"Delivery failed: {e.Error.Reason}");
+
+                        _logger.LogError($"Delivery failed: {e.Error.Reason}");
+
                     }
 
                 }
                 p.Flush(TimeSpan.FromSeconds(10));
-                Console.WriteLine(i);
             }
         }
     }

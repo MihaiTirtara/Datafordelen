@@ -7,11 +7,17 @@ using FluentFTP;
 using System.Threading.Tasks;
 using System.IO.Compression;
 using System.Linq;
+using Microsoft.Extensions.Logging;
 
 namespace Datafordelen.Ftp
 {
     public class FTPClient : IFTPClient
     {
+        private readonly ILogger<FTPClient> _logger;
+        public FTPClient(ILogger<FTPClient> logger)
+        {
+            _logger = logger;
+        }
         public void GetAddressInitialLoad(String url, String filepath)
         {
             var downloadLink = String.Empty;
@@ -31,7 +37,7 @@ namespace Datafordelen.Ftp
 
             // The link for downloading the necessary it is at the specified position
             downloadLink = feedwords[5];
-            Console.WriteLine(downloadLink);
+            _logger.LogInformation(downloadLink);
 
             WebClient client = new WebClient();
             client.DownloadFile(
@@ -56,11 +62,13 @@ namespace Datafordelen.Ftp
                     //Check if the file already exists in the local path
                     if (await client.CompareFileAsync(path + item.FullName, "/" + item.FullName, FtpCompareOption.Size) == FtpCompareResult.Equal)
                     {
-                        Console.WriteLine("item already exists " + item.FullName);
+                       
+                         _logger.LogInformation("item already exists " + item.FullName);
                     }
                     else
                     {
-                        Console.WriteLine("Item needs to be added " + item.FullName);
+                       
+                        _logger.LogInformation("Item needs to be added " + item.FullName);
                         await client.DownloadFileAsync(path + item.FullName, "/" + item.FullName);
                     }
                 }
@@ -82,7 +90,7 @@ namespace Datafordelen.Ftp
                 }
                 else
                 {
-                    Console.WriteLine("File already unzipped");
+                    _logger.LogInformation("File already unzipped");
                 }
             }
         }
