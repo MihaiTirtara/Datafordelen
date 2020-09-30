@@ -99,8 +99,6 @@ namespace Datafordelen.GeoData
                     while (jsonreader.Read())
                     {
                         var reader = new NetTopologySuite.IO.GeoJsonReader();
-                        //var feature = reader.Read<GeoJSON.Net.Feature.FeatureCollection>(jsonreader);
-                        //var featurecollection = reader.Read<NetTopologySuite.Features.FeatureCollection>(jsonreader);
                         if (jsonreader.TokenType == Newtonsoft.Json.JsonToken.StartObject)
                         {
                             while (jsonreader.Read())
@@ -120,7 +118,6 @@ namespace Datafordelen.GeoData
                                             var atr = feature.Attributes;
                                             if (boundingBox.Intersects(geo.EnvelopeInternal))
                                             {
-                                                //Console.WriteLine("This is one object " + be.ToString());
                                                 var jsonObj = new
                                                 {
                                                     gml_id = atr.GetOptionalValue("gml_id"),
@@ -128,8 +125,6 @@ namespace Datafordelen.GeoData
                                                     geo = geo.ToString()
                                                 };
                                                 jsonDoc = JsonConvert.SerializeObject(jsonObj);
-                                                //Console.WriteLine(jsonDoc);
-                                                //Console.WriteLine(jsonDoc);
                                                 batch.Add(jsonDoc);
                                                 if (batch.Count >= 5000)
                                                 {
@@ -154,7 +149,6 @@ namespace Datafordelen.GeoData
                                             batch.Add(jsonDoc);
                                             _producer.Produce(topicname, batch);
                                             batch.Clear();
-                                            Console.WriteLine("Document has been added");
                                             break;
                                         }
                                     }

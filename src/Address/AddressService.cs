@@ -11,6 +11,8 @@ using Datafordelen.Ftp;
 using NetTopologySuite.Geometries;
 using NetTopologySuite.IO;
 using Microsoft.Extensions.Options;
+using Microsoft.Extensions.Logging;
+
 
 namespace Datafordelen.Address
 {
@@ -20,7 +22,9 @@ namespace Datafordelen.Address
         private IFTPClient _client;
         private IKafkaProducer _kafkaProducer;
 
-        public AddressService(IOptions<AppSettings> appSettings, IFTPClient ftpClient, IKafkaProducer kafkaProducer)
+        private readonly ILogger<AddressService> _logger;
+
+        public AddressService(IOptions<AppSettings> appSettings, ILogger<AddressService> logger, IFTPClient ftpClient, IKafkaProducer kafkaProducer)
         {
             _appSettings = appSettings.Value;
             _client = ftpClient;
@@ -72,7 +76,8 @@ namespace Datafordelen.Address
                     string file = Path.GetFileName(filename);
                     string destFile = Path.Combine(destinationDirectory, file);
                     File.Move(filename, destFile);
-                    Console.WriteLine("File moved in new directory");
+                    Console.WriteLine();
+                    _logger.LogInformation("File moved in new directory");
                 }
                 else
                 {
@@ -151,7 +156,6 @@ namespace Datafordelen.Address
                                             if (ohus["addressPoint"].Equals(oadress["id_lokalId"]))
                                             {
                                                 ohus["position"] = oadress["position"];
-                                                //Console.WriteLine(o1.ToString());
                                                 var newhus = JsonConvert.SerializeObject(ohus, Formatting.Indented);
                                                 newHussnummerBatch.Add(newhus);
                                             }
@@ -167,6 +171,7 @@ namespace Datafordelen.Address
                                 {
                                     var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
                                     _kafkaProducer.Produce(listName, boundingBatch);
+                                    
                                     boundingBatch.Clear();
                                     jsonText.Clear();
                                     Console.WriteLine("Wrote 100000 objects into topic");
@@ -189,10 +194,8 @@ namespace Datafordelen.Address
                             adresspunktBatch.Add(b);
                         }
 
-                        _kafkaProducer.Produce(listName, boundingBatch);
                         boundingBatch.Clear();
                         jsonText.Clear();
-                        Console.WriteLine("This is the adresspunkt inside loop " + adresspunktBatch.Count);
                     }
                     else if (listName.Equals("HusnummerList"))
                     {
@@ -201,7 +204,6 @@ namespace Datafordelen.Address
                             hussnummerBatch.Add(ob);
                         }
                         jsonText.Clear();
-                        Console.WriteLine("This is the hussnummer inside loop " + hussnummerBatch.Count);
                         foreach (var hus in hussnummerBatch)
                         {
                             foreach (var adress in adresspunktBatch)
@@ -219,6 +221,7 @@ namespace Datafordelen.Address
                         }
 
                         _kafkaProducer.Produce(listName, newHussnummerBatch);
+                         _logger.LogInformation("Wrote " + newHussnummerBatch.Count + " objects into topic" );
                         adresspunktBatch.Clear();
                         hussnummerBatch.Clear();
                         newHussnummerBatch.Clear();
@@ -227,17 +230,15 @@ namespace Datafordelen.Address
                     {
                         var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
                         _kafkaProducer.Produce(listName, boundingBatch);
-
+                        _logger.LogInformation("Wrote " + boundingBatch.Count + " objects into topic" );
                         boundingBatch.Clear();
                         jsonText.Clear();
-                        Console.WriteLine("Wrote 100000 objects into topic");
                     }
                     else
                     {
                         _kafkaProducer.Produce(listName, jsonText);
-
+                        _logger.LogInformation("Wrote " + jsonText.Count + " objects into topic" );
                         jsonText.Clear();
-                        Console.WriteLine("Wrote 100000 objects into topic");
                     }
                 }
             }
@@ -312,8 +313,7 @@ namespace Datafordelen.Address
                         */
                         catch (NetTopologySuite.IO.ParseException e)
                         {
-                            Console.WriteLine("Error writing data: {0}.", e.GetType().Name);
-                            Console.WriteLine(document);
+                            _logger.LogError("Error writing data: {0}.", e.GetType().Name);
                             JObject obj = JObject.Parse(document);
                             if (String.IsNullOrEmpty(obj["roadRegistrationRoadArea"].ToString()) == false & (String.IsNullOrEmpty(obj["roadRegistrationRoadConnectionPoints"].ToString()) == false))
                             {
@@ -321,7 +321,6 @@ namespace Datafordelen.Address
                                 if (boundingBox.Intersects(polygon.EnvelopeInternal))
                                 {
                                     filteredBatch.Add(document);
-                                    Console.WriteLine("document added");
                                 }
                             }
                             break;
@@ -330,7 +329,6 @@ namespace Datafordelen.Address
                 }
             }
 
-            Console.WriteLine(filteredBatch.Count);
             return filteredBatch;
         }
 
@@ -513,7 +511,7 @@ namespace Datafordelen.Address
             return obj;
         }
 
-        public static string ChangeDateFormat(string dateString)
+        public  string ChangeDateFormat(string dateString)
         {
             DateTime result;
             if (dateString == null)
@@ -529,9 +527,10 @@ namespace Datafordelen.Address
                     result = DateTime.Parse(dateString, null, System.Globalization.DateTimeStyles.RoundtripKind);
                     return result.ToString("yyyy-MM-dd HH:mm:ss");
                 }
-                catch (ArgumentNullException)
+                catch (ArgumentNullException )
                 {
-                    Console.WriteLine("{0} is not in the correct format.", dateString);
+                    
+                    _logger.LogError("{0} is not in the correct format.", dateString);
                 }
             }
             return String.Empty;
