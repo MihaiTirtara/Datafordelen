@@ -17,19 +17,18 @@ namespace Datafordelen.Address
     public class AddressService : IAddressService
     {
         private readonly AppSettings _appSettings;
-        private FTPClient _client;
-        private KafkaProducer _kafkaProducer;
+        private IFTPClient _client;
+        private IKakfkaProducer _kafkaProducer;
 
-        public AddressService(IOptions<AppSettings> appSettings)
+        public AddressService(IOptions<AppSettings> appSettings, IFTPClient ftpClient, IKakfkaProducer kafkaProducer)
         {
             _appSettings = appSettings.Value;
-            _client = new FTPClient();
-            _kafkaProducer = new KafkaProducer(_appSettings);
+            _client = ftpClient;
+            _kafkaProducer = kafkaProducer;
         }
 
         public async Task GetinitialAddressData()
         {
-            Console.WriteLine("this is the uri" + _appSettings.InitialAddressDataUrl);
             _client.GetAddressInitialLoad(_appSettings.InitialAddressDataUrl, _appSettings.InitialAddressDataZipFilePath);
             _client.UnzipFile(_appSettings.InitialAddressDataUnzipPath, _appSettings.InitialAddressDataUnzipPath);
             await ProcessLatestAdresses(

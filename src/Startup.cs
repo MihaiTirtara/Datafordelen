@@ -2,6 +2,7 @@ using System.Threading.Tasks;
 using Datafordelen.GeoData;
 using Datafordelen.Address;
 
+
 namespace Datafordelen
 {
     public class Startup
@@ -17,9 +18,8 @@ namespace Datafordelen
 
         public async Task StartAsync()
         {
-            await _addressService.GetinitialAddressData();
+            
             await _addressService.GetLatestAddressData();
-            await _geoDataService.GetLatestGeoData();
         }
     }
 }

@@ -14,8 +14,7 @@ namespace Datafordelen.Internal
         public static ServiceProvider Configure()
         {
             var builder = new ConfigurationBuilder();
-            SetupAppSettings(builder);
-            var configuration = builder.Build();
+            var configuration = SetupAppSettings(builder);
 
             var serviceProvider = new ServiceCollection();
             ConfigureServices(serviceProvider, configuration);
@@ -23,16 +22,17 @@ namespace Datafordelen.Internal
             return serviceProvider.BuildServiceProvider();
         }
 
-        private static void SetupAppSettings(ConfigurationBuilder builder)
+        private static IConfigurationRoot SetupAppSettings(ConfigurationBuilder builder)
         {
-            builder
+            return builder
                 .SetBasePath(Directory.GetCurrentDirectory())
-                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true);
+                .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .Build();
         }
 
         private static void ConfigureServices(ServiceCollection serviceCollection, IConfigurationRoot configuration)
         {
-            serviceCollection.Configure<AppSettings>(configuration.GetSection("appSettings"));
+            serviceCollection.Configure<AppSettings>(configuration.GetSection("AppSettings"));
             serviceCollection.AddSingleton<Startup, Startup>();
             serviceCollection.AddSingleton<IGeoDataService, GeoDataService>();
             serviceCollection.AddSingleton<IAddressService, AddressService>();

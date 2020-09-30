@@ -4,6 +4,7 @@ using System.Linq;
 using System.Collections.Generic;
 using Newtonsoft.Json.Linq;
 using Datafordelen.Config;
+using Microsoft.Extensions.Options;
 
 namespace Datafordelen.Kafka
 {
@@ -11,9 +12,9 @@ namespace Datafordelen.Kafka
     {
         private readonly AppSettings _appSettings;
 
-        public KafkaProducer(AppSettings appSettings)
+        public KafkaProducer(IOptions<AppSettings> appSettings)
         {
-            _appSettings = appSettings;
+            _appSettings = appSettings.Value;
         }
 
         public void Produce(string topicname, List<string> batch)

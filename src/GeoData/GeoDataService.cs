@@ -16,16 +16,16 @@ namespace Datafordelen.GeoData
     public class GeoDataService : IGeoDataService
     {
         private readonly AppSettings _appSettings;
-        private readonly FTPClient _client;
-        private readonly KafkaProducer _producer;
+        private readonly IFTPClient _client;
+        private readonly IKakfkaProducer _producer;
         private readonly ILogger<GeoDataService> _logger;
 
-        public GeoDataService(IOptions<AppSettings> appSettings, ILogger<GeoDataService> logger)
+        public GeoDataService(IOptions<AppSettings> appSettings, ILogger<GeoDataService> logger, IKakfkaProducer kakfkaProducer, IFTPClient ftpClient)
         {
             _appSettings = appSettings.Value;
             _logger = logger;
-            _client = new FTPClient();
-            _producer = new KafkaProducer(_appSettings);
+            _client = ftpClient;
+            _producer = kakfkaProducer;
         }
 
         public async Task GetLatestGeoData()
