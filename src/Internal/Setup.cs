@@ -4,6 +4,7 @@ using System.IO;
 using Datafordelen.Address;
 using Datafordelen.GeoData;
 using Datafordelen.Config;
+using Datafordelen.Ftp;
 
 namespace Datafordelen.Internal
 {
@@ -34,6 +35,7 @@ namespace Datafordelen.Internal
             serviceCollection.AddSingleton<Startup, Startup>();
             serviceCollection.AddSingleton<IGeoDataService, GeoDataService>();
             serviceCollection.AddSingleton<IAddressService, AddressService>();
+            serviceCollection.AddSingleton<IFTPClient,FTPClient>();
             serviceCollection.AddLogging();
         }
     }

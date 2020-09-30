@@ -10,7 +10,7 @@ using System.Linq;
 
 namespace Datafordelen.Ftp
 {
-    public class FTPClient
+    public class FTPClient : IFTPClient
     {
         public void GetAddressInitialLoad(String url, String filepath)
         {

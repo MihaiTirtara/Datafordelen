@@ -4,6 +4,6 @@ namespace Datafordelen.GeoData
 {
     public interface IGeoDataService
     {
-        public Task GetLatestGeoData();
+        Task GetLatestGeoData();
     }
 }
