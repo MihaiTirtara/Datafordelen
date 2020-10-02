@@ -7,6 +7,8 @@ using Datafordelen.Config;
 using Datafordelen.Ftp;
 using Datafordelen.Kafka;
 using Microsoft.Extensions.Logging;
+using Serilog;
+using Serilog.Formatting.Compact;
 
 namespace Datafordelen.Internal
 {
@@ -40,16 +42,16 @@ namespace Datafordelen.Internal
             serviceCollection.AddSingleton<IAddressService, AddressService>();
             serviceCollection.AddSingleton<IFTPClient, FTPClient>();
             serviceCollection.AddSingleton<IKafkaProducer, KafkaProducer>();
-            serviceCollection.AddLogging();
+            serviceCollection.AddLogging(configure =>
+            {
+                var logger = new LoggerConfiguration()
+                    .ReadFrom.Configuration(loggingConfiguration)
+                    .Enrich.FromLogContext()
+                    .WriteTo.Console(new CompactJsonFormatter())
+                    .CreateLogger();
 
-            serviceCollection.AddLogging(configure => configure.AddConsole())
-                    .AddTransient<AddressService>();
-            serviceCollection.AddLogging(configure => configure.AddConsole())
-                    .AddTransient<GeoDataService>();
-            serviceCollection.AddLogging(configure => configure.AddConsole())
-            .AddTransient<FTPClient>();
-            serviceCollection.AddLogging(configure => configure.AddConsole())
-            .AddTransient<KafkaProducer>();
+                configure.AddSerilog(logger, true);
+            });
         }
     }
 }

@@ -3,7 +3,6 @@ using System.Threading.Tasks;
 using Datafordelen.Internal;
 using Microsoft.Extensions.DependencyInjection;
 
-
 namespace Datafordelen
 {
     class Program
