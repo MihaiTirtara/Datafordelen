@@ -33,7 +33,6 @@ namespace Datafordelen.Internal
                 .Build();
         }
 
-
         private static void ConfigureServices(ServiceCollection serviceCollection, IConfigurationRoot configuration)
         {
             serviceCollection.Configure<AppSettings>(configuration.GetSection("AppSettings"));
@@ -44,6 +43,9 @@ namespace Datafordelen.Internal
             serviceCollection.AddSingleton<IKafkaProducer, KafkaProducer>();
             serviceCollection.AddLogging(configure =>
             {
+                var loggingConfiguration = new ConfigurationBuilder()
+                   .AddEnvironmentVariables().Build();
+
                 var logger = new LoggerConfiguration()
                     .ReadFrom.Configuration(loggingConfiguration)
                     .Enrich.FromLogContext()
