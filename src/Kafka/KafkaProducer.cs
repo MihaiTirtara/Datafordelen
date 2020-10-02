@@ -22,13 +22,11 @@ namespace Datafordelen.Kafka
 
         public void Produce(string topicname, List<string> batch)
         {
-            var config = new ProducerConfig { BootstrapServers = _appSettings.KafkaBootstrapServer, LingerMs = 5, BatchNumMessages = 100000, QueueBufferingMaxMessages = 100000 };
-            var i = 0;
+            var config = new ProducerConfig { BootstrapServers = _appSettings.KafkaBootstrapServer, LingerMs = 5, BatchNumMessages = 100000, QueueBufferingMaxMessages = 100000 };            var i = 0;
 
             using (var p = new ProducerBuilder<string, string>(config).Build())
             {
-                Console.WriteLine(batch.Count());
-                i += 10000;
+
                 foreach (var document in batch)
                 {
                     var id = String.Empty;

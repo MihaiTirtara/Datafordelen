@@ -6,6 +6,7 @@ using Datafordelen.GeoData;
 using Datafordelen.Config;
 using Datafordelen.Ftp;
 using Datafordelen.Kafka;
+using Microsoft.Extensions.Logging;
 
 namespace Datafordelen.Internal
 {
@@ -30,15 +31,25 @@ namespace Datafordelen.Internal
                 .Build();
         }
 
+
         private static void ConfigureServices(ServiceCollection serviceCollection, IConfigurationRoot configuration)
         {
             serviceCollection.Configure<AppSettings>(configuration.GetSection("AppSettings"));
             serviceCollection.AddSingleton<Startup, Startup>();
             serviceCollection.AddSingleton<IGeoDataService, GeoDataService>();
             serviceCollection.AddSingleton<IAddressService, AddressService>();
-            serviceCollection.AddSingleton<IFTPClient,FTPClient>();
-            serviceCollection.AddSingleton<IKafkaProducer,KafkaProducer>();
+            serviceCollection.AddSingleton<IFTPClient, FTPClient>();
+            serviceCollection.AddSingleton<IKafkaProducer, KafkaProducer>();
             serviceCollection.AddLogging();
+
+            serviceCollection.AddLogging(configure => configure.AddConsole())
+                    .AddTransient<AddressService>();
+            serviceCollection.AddLogging(configure => configure.AddConsole())
+                    .AddTransient<GeoDataService>();
+            serviceCollection.AddLogging(configure => configure.AddConsole())
+            .AddTransient<FTPClient>();
+            serviceCollection.AddLogging(configure => configure.AddConsole())
+            .AddTransient<KafkaProducer>();
         }
     }
 }

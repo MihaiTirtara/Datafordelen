@@ -29,6 +29,7 @@ namespace Datafordelen.Address
             _appSettings = appSettings.Value;
             _client = ftpClient;
             _kafkaProducer = kafkaProducer;
+            _logger = logger;
         }
 
         public async Task GetinitialAddressData()
@@ -68,22 +69,21 @@ namespace Datafordelen.Address
             var dirs = sourceinfo.GetDirectories();
 
             List<String> fileEntries = Directory.GetFiles(sourceDirectory).ToList();
-            foreach (string filename in fileEntries)
+            foreach (string fileName in fileEntries)
             {
-                if (!filename.Contains("Metadata"))
+                if (!fileName.Contains("Metadata"))
                 {
-                    await AdressToKafka(filename, minX, minY, maxX, maxY);
-                    string file = Path.GetFileName(filename);
+                    await AdressToKafka(fileName, minX, minY, maxX, maxY);
+                    string file = Path.GetFileName(fileName);
                     string destFile = Path.Combine(destinationDirectory, file);
-                    File.Move(filename, destFile);
-                    Console.WriteLine();
-                    _logger.LogInformation("File moved in new directory");
+                    File.Move(fileName, destFile);
+                    _logger.LogInformation(fileName + " moved in new directory " );
                 }
                 else
                 {
-                    string file = Path.GetFileName(filename);
+                    string file = Path.GetFileName(fileName);
                     string destFile = Path.Combine(destinationDirectory, file);
-                    File.Move(filename, destFile);
+                    File.Move(fileName, destFile);
                 }
             }
         }
@@ -163,6 +163,7 @@ namespace Datafordelen.Address
                                         }
                                     }
                                     _kafkaProducer.Produce(listName, newHussnummerBatch);
+                                    _logger.LogInformation("Wrote " + newHussnummerBatch.Count + " objects into topic" );
                                     adresspunktBatch.Clear();
                                     hussnummerBatch.Clear();
                                     newHussnummerBatch.Clear();
@@ -174,13 +175,13 @@ namespace Datafordelen.Address
                                     
                                     boundingBatch.Clear();
                                     jsonText.Clear();
-                                    Console.WriteLine("Wrote 100000 objects into topic");
+
                                 }
                                 else
                                 {
                                     _kafkaProducer.Produce(listName, jsonText);
                                     jsonText.Clear();
-                                    Console.WriteLine("Wrote 100000 objects into topic");
+                                    
                                 }
                             }
                         }
@@ -213,7 +214,6 @@ namespace Datafordelen.Address
                                 if (ohus["addressPoint"].Equals(oadress["id_lokalId"]))
                                 {
                                     ohus["position"] = oadress["position"];
-                                    //Console.WriteLine(o1.ToString());
                                     var newhus = JsonConvert.SerializeObject(ohus, Formatting.Indented);
                                     newHussnummerBatch.Add(newhus);
                                 }

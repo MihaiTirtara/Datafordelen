@@ -30,11 +30,9 @@ namespace Datafordelen.GeoData
 
         public async Task GetLatestGeoData()
         {
-            await _client.GetFileFtp(_appSettings.FtpServer, _appSettings.GeoUserName, _appSettings.GeoPassword, _appSettings.GeoUnzipPath);
-            _client.UnzipFile(_appSettings.GeoUnzipPath, _appSettings.GeoGmlPath);
-            convertToGeojson(_appSettings.GeoFieldList);
-            Console.WriteLine(_appSettings.GeoUnzipPath);
-            Console.WriteLine(_appSettings.GeoFieldList);
+            //await _client.GetFileFtp(_appSettings.FtpServer, _appSettings.GeoUserName, _appSettings.GeoPassword, _appSettings.GeoUnzipPath);
+            //_client.UnzipFile(_appSettings.GeoUnzipPath, _appSettings.GeoGmlPath);
+            //convertToGeojson(_appSettings.GeoFieldList);
             ProcessGeoDirectory(_appSettings.GeoUnzipPath,
              _appSettings.GeoProcessedPath,
              _appSettings.GeoFieldList,
@@ -57,6 +55,7 @@ namespace Datafordelen.GeoData
                 var dest = Path.Combine(destinationDirectory, fileNoExtension + ".json");
                 filterGeoPosition(fileName, minX, maxX, minY, maxY);
                 File.Move(fileName, dest);
+                _logger.LogInformation(fileName + " moved in new directory " );
             }
         }
 
@@ -129,6 +128,7 @@ namespace Datafordelen.GeoData
                                                 if (batch.Count >= 5000)
                                                 {
                                                     _producer.Produce(topicname, batch);
+                                                    _logger.LogInformation("Wrote " + batch.Count + " objects into " + topicname);
                                                     batch.Clear();
                                                 }
                                             }
@@ -148,6 +148,7 @@ namespace Datafordelen.GeoData
                                             jsonDoc = JsonConvert.SerializeObject(jsonObj);
                                             batch.Add(jsonDoc);
                                             _producer.Produce(topicname, batch);
+                                            _logger.LogInformation("Wrote " + batch.Count + " objects into " + topicname);
                                             batch.Clear();
                                             break;
                                         }
@@ -159,6 +160,7 @@ namespace Datafordelen.GeoData
                         if (batch != null)
                         {
                             _producer.Produce(topicname, batch);
+                            _logger.LogInformation("Wrote " + batch.Count + " objects into " + topicname);
                             batch.Clear();
                         }
                     }
