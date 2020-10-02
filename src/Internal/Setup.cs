@@ -30,6 +30,7 @@ namespace Datafordelen.Internal
             return builder
                 .SetBasePath(Directory.GetCurrentDirectory())
                 .AddJsonFile("appsettings.json", optional: true, reloadOnChange: true)
+                .AddEnvironmentVariables()
                 .Build();
         }
 
