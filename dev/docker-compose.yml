@@ -36,6 +36,24 @@ services:
       - WAL_LEVEL=logical
     volumes:
       - .:/postgres_open_ftth
+
+  Datafordeleren:
+    image: datafordeleren
+    ports:
+      - 5008:80
+    environment:
+      initialAddressDataUrl: https://selfservice.datafordeler.dk/filedownloads/626/334
+      initialAddressDataZipFilePath: /home/mehigh/ftptrials/adress.zip
+      initialAddressDataUnzipPath: /home/mehigh/ftptrials/
+      initialAddressDataProcessedPath: /home/mehigh/newftp
+      minX: 538913
+      maxX: 6182387
+      minY: 568605
+      maxY: 6199152
+      ftpServer: ftp3.datafordeler.dk
+      addressUserName: JFOWRLSDKM
+      addressPassword: sWRbn2M8y2tH!
+
   mssql:
     # *-----------------------------*
     # To connect to the DB: 

@@ -163,7 +163,7 @@ namespace Datafordelen.Address
                                         }
                                     }
                                     _kafkaProducer.Produce(listName, newHussnummerBatch);
-                                    _logger.LogInformation("Wrote " + newHussnummerBatch.Count + " objects into topic" );
+                                    _logger.LogInformation("Wrote " + newHussnummerBatch.Count + " objects into " + listName );
                                     adresspunktBatch.Clear();
                                     hussnummerBatch.Clear();
                                     newHussnummerBatch.Clear();
@@ -172,7 +172,7 @@ namespace Datafordelen.Address
                                 {
                                     var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
                                     _kafkaProducer.Produce(listName, boundingBatch);
-                                    
+                                     _logger.LogInformation("Wrote " + boundingBatch.Count + " objects into " + listName );
                                     boundingBatch.Clear();
                                     jsonText.Clear();
 
@@ -221,7 +221,7 @@ namespace Datafordelen.Address
                         }
 
                         _kafkaProducer.Produce(listName, newHussnummerBatch);
-                         _logger.LogInformation("Wrote " + newHussnummerBatch.Count + " objects into topic" );
+                           _logger.LogInformation("Wrote " + newHussnummerBatch.Count + " objects into " + listName );
                         adresspunktBatch.Clear();
                         hussnummerBatch.Clear();
                         newHussnummerBatch.Clear();
@@ -230,14 +230,14 @@ namespace Datafordelen.Address
                     {
                         var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
                         _kafkaProducer.Produce(listName, boundingBatch);
-                        _logger.LogInformation("Wrote " + boundingBatch.Count + " objects into topic" );
+                        _logger.LogInformation("Wrote " + boundingBatch.Count + " objects into " + listName );
                         boundingBatch.Clear();
                         jsonText.Clear();
                     }
                     else
                     {
                         _kafkaProducer.Produce(listName, jsonText);
-                        _logger.LogInformation("Wrote " + jsonText.Count + " objects into topic" );
+                          _logger.LogInformation("Wrote " + jsonText.Count + " objects into " + listName );
                         jsonText.Clear();
                     }
                 }

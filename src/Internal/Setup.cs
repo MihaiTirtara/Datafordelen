@@ -9,6 +9,7 @@ using Datafordelen.Kafka;
 using Microsoft.Extensions.Logging;
 using Serilog;
 using Serilog.Formatting.Compact;
+using Microsoft.Extensions.Hosting;
 
 namespace Datafordelen.Internal
 {
