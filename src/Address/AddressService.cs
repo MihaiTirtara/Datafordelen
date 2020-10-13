@@ -221,7 +221,7 @@ namespace Datafordelen.Address
                         }
 
                         _kafkaProducer.Produce(listName, newHussnummerBatch);
-                           _logger.LogInformation("Wrote " + newHussnummerBatch.Count + " objects into " + listName );
+                        _logger.LogInformation("Wrote " + newHussnummerBatch.Count + " objects into " + listName );
                         adresspunktBatch.Clear();
                         hussnummerBatch.Clear();
                         newHussnummerBatch.Clear();
@@ -237,7 +237,7 @@ namespace Datafordelen.Address
                     else
                     {
                         _kafkaProducer.Produce(listName, jsonText);
-                          _logger.LogInformation("Wrote " + jsonText.Count + " objects into " + listName );
+                        _logger.LogInformation("Wrote " + jsonText.Count + " objects into " + listName );
                         jsonText.Clear();
                     }
                 }
@@ -314,15 +314,7 @@ namespace Datafordelen.Address
                         catch (NetTopologySuite.IO.ParseException e)
                         {
                             _logger.LogError("Error writing data: {0}.", e.GetType().Name);
-                            JObject obj = JObject.Parse(document);
-                            if (String.IsNullOrEmpty(obj["roadRegistrationRoadArea"].ToString()) == false & (String.IsNullOrEmpty(obj["roadRegistrationRoadConnectionPoints"].ToString()) == false))
-                            {
-                                polygon = rdr.Read((string)obj["roadRegistrationRoadArea"]);
-                                if (boundingBox.Intersects(polygon.EnvelopeInternal))
-                                {
-                                    filteredBatch.Add(document);
-                                }
-                            }
+                            _logger.LogInformation(document);
                             break;
                         }
                     }
