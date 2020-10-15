@@ -26,17 +26,6 @@ services:
       KAFKA_GROUP_INITIAL_REBALANCE_DELAY_MS: 100
 
 
-  postgres:
-    image: kartoza/postgis
-    ports:
-      - 5432:5432
-    environment:
-      - POSTGRES_USER=postgres
-      - POSTGRES_PASSWORD=postgres
-      - WAL_LEVEL=logical
-    volumes:
-      - .:/postgres_open_ftth
-
   Datafordeleren:
     image: datafordeleren
     ports:
