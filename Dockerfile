@@ -6,7 +6,8 @@ COPY ./src/*.csproj ./
 RUN dotnet restore
 
 #Copy the convert script
-COPY ./src/convert_script.sh ./datafordeleren
+COPY ./src/convert_script.sh ./out/
+
 
 # Copy everything else and build
 COPY . ./
@@ -16,5 +17,9 @@ RUN dotnet publish -c Release -o out
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.1
 WORKDIR /app
 COPY --from=build-env /app/out .
+
+RUN apt-get update && apt-get install -y \
+  gdal-bin
+
 ENTRYPOINT ["dotnet", "Datafordeleren.dll"]
 

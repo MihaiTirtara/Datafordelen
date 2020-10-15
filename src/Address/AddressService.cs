@@ -257,8 +257,6 @@ namespace Datafordelen.Address
             string value = "";
             WKTReader rdr = new WKTReader(geometryFactory);
             var boundingBox = new NetTopologySuite.Geometries.Envelope(minX, maxX, minY, maxY);
-            _logger.LogInformation("I am here inside the filter");
-            _logger.LogInformation(minX.ToString());
             foreach (var document in batch)
             {
                 JObject o = JObject.Parse(document);
