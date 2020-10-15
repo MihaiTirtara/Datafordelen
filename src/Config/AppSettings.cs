@@ -33,5 +33,8 @@ namespace Datafordelen.Config
         public List<string> GeoFieldList { get; set; }
 
         public string KafkaBootstrapServer { get; set; }
+
+        public string ConvertScriptFileName { get; set; }
+
     }
 }

@@ -32,7 +32,7 @@ namespace Datafordelen.GeoData
         {
             await _client.GetFileFtp(_appSettings.FtpServer, _appSettings.GeoUserName, _appSettings.GeoPassword, _appSettings.GeoUnzipPath);
             _client.UnzipFile(_appSettings.GeoUnzipPath, _appSettings.GeoGmlPath);
-            convertToGeojson(_appSettings.GeoFieldList);
+            convertToGeojson(_appSettings.GeoFieldList,_appSettings.ConvertScriptFileName);
             ProcessGeoDirectory(_appSettings.GeoUnzipPath,
              _appSettings.GeoProcessedPath,
              _appSettings.GeoFieldList,
@@ -59,13 +59,13 @@ namespace Datafordelen.GeoData
             }
         }
 
-        private void convertToGeojson(List<string> list)
+        private void convertToGeojson(List<string> list, string convertScriptFilename)
         {
             foreach (var item in list)
             {
                 var startInfo = new ProcessStartInfo()
                 {
-                    FileName = @"/home/mehigh/confluentKafka/convert_script.sh",
+                    FileName = convertScriptFilename,
 
                     Arguments = item
                 };

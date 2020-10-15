@@ -5,6 +5,9 @@ WORKDIR /app
 COPY ./src/*.csproj ./
 RUN dotnet restore
 
+#Copy the convert script
+COPY ./src/convert_script.sh ./datafordeleren
+
 # Copy everything else and build
 COPY . ./
 RUN dotnet publish -c Release -o out

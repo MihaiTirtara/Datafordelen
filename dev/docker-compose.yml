@@ -60,6 +60,7 @@ services:
       APPSETTINGS__GEOPROCESSEDPATH: datafordeleren/NewGeo
       APPSETTINGS__GEOFIELDLIST: trae, bygning, chikane, erhverv, bygvaerk, systemlinje, vejkant, vejmidte
       APPSETTINGS__KAFKABOOTSTRAPSERVER: kafka0:29092
+      APPSETTINGS__CONVERTSCRIPTFILENAME: datafordeleren/convert_script.sh
 
   mssql:
     # *-----------------------------*
