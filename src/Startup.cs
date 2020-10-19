@@ -20,7 +20,7 @@ namespace Datafordelen
         {
             
             await _addressService.GetLatestAddressData();
-            //await _geoDataService.GetLatestGeoData();
+            await _geoDataService.GetLatestGeoData();
         }
     }
 }

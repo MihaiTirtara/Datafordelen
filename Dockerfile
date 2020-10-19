@@ -6,7 +6,10 @@ COPY ./src/*.csproj ./
 RUN dotnet restore
 
 #Copy the convert script
-COPY ./src/convert_script.sh ./out/
+COPY ./src/convert_script.sh ./out/datafordeleren/
+
+COPY ./src/geodanmark_60_nohist.plads.gml ./out/datafordeleren/
+COPY ./src/geodanmark_60_nohist.vandafstroemningsopland.gml ./out/datafordeleren/
 
 
 # Copy everything else and build

@@ -30,7 +30,7 @@ namespace Datafordelen.Config
 
         public string GeoProcessedPath { get; set; }
 
-        public List<string> GeoFieldList { get; set; }
+        public string GeoFieldList { get; set; }
 
         public string KafkaBootstrapServer { get; set; }
 

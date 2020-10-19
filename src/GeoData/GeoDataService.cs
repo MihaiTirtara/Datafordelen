@@ -30,8 +30,8 @@ namespace Datafordelen.GeoData
 
         public async Task GetLatestGeoData()
         {
-            await _client.GetFileFtp(_appSettings.FtpServer, _appSettings.GeoUserName, _appSettings.GeoPassword, _appSettings.GeoUnzipPath);
-            _client.UnzipFile(_appSettings.GeoUnzipPath, _appSettings.GeoGmlPath);
+            //await _client.GetFileFtp(_appSettings.FtpServer, _appSettings.GeoUserName, _appSettings.GeoPassword, _appSettings.GeoUnzipPath);
+            //_client.UnzipFile(_appSettings.GeoUnzipPath, _appSettings.GeoGmlPath);
             convertToGeojson(_appSettings.GeoFieldList,_appSettings.ConvertScriptFileName);
             ProcessGeoDirectory(_appSettings.GeoUnzipPath,
              _appSettings.GeoProcessedPath,
@@ -42,11 +42,12 @@ namespace Datafordelen.GeoData
              _appSettings.MaxY);
         }
 
-        private void ProcessGeoDirectory(string sourceDirectory, string destinationDirectory, List<String> geoFilter, double minX, double minY, double maxX, double maxY)
+        private void ProcessGeoDirectory(string sourceDirectory, string destinationDirectory, string geoFilter, double minX, double minY, double maxX, double maxY)
         {
             var fileEntries = Directory.GetFiles(sourceDirectory).ToList();
             var filtered = new List<String>();
-            var result = fileEntries.Where(a => geoFilter.Any(b => a.Contains(b))).ToList();
+            List<string> filterList = geoFilter.Split(",").ToList();  
+            var result = fileEntries.Where(a => filterList.Any(b => a.Contains(b))).ToList();
 
             foreach (string fileName in result)
             {
@@ -59,10 +60,14 @@ namespace Datafordelen.GeoData
             }
         }
 
-        private void convertToGeojson(List<string> list, string convertScriptFilename)
+        private void convertToGeojson(string list, string convertScriptFilename)
         {
-            foreach (var item in list)
+
+            List<string> filterList = list.Split(",").ToList(); 
+            foreach (var item in filterList)
             {
+                _logger.LogInformation(item);
+                _logger.LogInformation(convertScriptFilename);
                 var startInfo = new ProcessStartInfo()
                 {
                     FileName = convertScriptFilename,
@@ -78,6 +83,7 @@ namespace Datafordelen.GeoData
                 proc.Start();
                 proc.WaitForExit();
             }
+            
         }
 
         private void filterGeoPosition(String fileName, double minX, double maxX, double minY, double maxY)
