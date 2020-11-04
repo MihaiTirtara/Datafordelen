@@ -68,21 +68,21 @@ namespace Datafordelen.Address
             var sourceinfo = new DirectoryInfo(sourceDirectory);
             var dirs = sourceinfo.GetDirectories();
 
-            List<String> fileEntries = Directory.GetFiles(sourceDirectory).ToList();
+            var fileEntries = Directory.GetFiles(sourceDirectory).ToList();
             foreach (string fileName in fileEntries)
             {
                 if (!fileName.Contains("Metadata"))
                 {
                     await AdressToKafka(fileName, minX, minY, maxX, maxY);
-                    string file = Path.GetFileName(fileName);
-                    string destFile = Path.Combine(destinationDirectory, file);
+                    var file = Path.GetFileName(fileName);
+                    var destFile = Path.Combine(destinationDirectory, file);
                     File.Move(fileName, destFile);
-                    _logger.LogInformation(fileName + " moved in new directory " );
+                    _logger.LogInformation(fileName + " moved in new directory ");
                 }
                 else
                 {
-                    string file = Path.GetFileName(fileName);
-                    string destFile = Path.Combine(destinationDirectory, file);
+                    var file = Path.GetFileName(fileName);
+                    var destFile = Path.Combine(destinationDirectory, file);
                     File.Move(fileName, destFile);
                 }
             }
@@ -93,9 +93,9 @@ namespace Datafordelen.Address
             var hussnummerBatch = new List<string>();
             var adresspunktBatch = new List<string>();
             var newHussnummerBatch = new List<string>();
-            using (FileStream fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
-            using (StreamReader sr = new StreamReader(fs))
-            using (JsonTextReader reader = new JsonTextReader(sr))
+            using (var fs = new FileStream(filename, FileMode.Open, FileAccess.Read))
+            using (var sr = new StreamReader(fs))
+            using (var reader = new JsonTextReader(sr))
             {
                 while (await reader.ReadAsync())
                 {
@@ -147,23 +147,10 @@ namespace Datafordelen.Address
                                         hussnummerBatch.Add(ob);
                                     }
                                     jsonText.Clear();
-                                    foreach (var hus in hussnummerBatch)
-                                    {
-                                        foreach (var adress in adresspunktBatch)
-                                        {
-                                            JObject ohus = JObject.Parse(hus);
-                                            JObject oadress = JObject.Parse(adress);
-                                            if (ohus["addressPoint"].Equals(oadress["id_lokalId"]))
-                                            {
-                                                ohus["position"] = oadress["position"];
-                                                var newhus = JsonConvert.SerializeObject(ohus, Formatting.Indented);
-                                                newHussnummerBatch.Add(newhus);
-                                            }
-
-                                        }
-                                    }
+                                    newHussnummerBatch = AddPositionToHouseObjects(adresspunktBatch,hussnummerBatch);
+                                    
                                     _kafkaProducer.Produce(listName, newHussnummerBatch);
-                                    _logger.LogInformation("Wrote " + newHussnummerBatch.Count + " objects into " + listName );
+                                    _logger.LogInformation("Wrote " + newHussnummerBatch.Count + " objects into " + listName);
                                     adresspunktBatch.Clear();
                                     hussnummerBatch.Clear();
                                     newHussnummerBatch.Clear();
@@ -172,7 +159,7 @@ namespace Datafordelen.Address
                                 {
                                     var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
                                     _kafkaProducer.Produce(listName, boundingBatch);
-                                     _logger.LogInformation("Wrote " + boundingBatch.Count + " objects into " + listName );
+                                    _logger.LogInformation("Wrote " + boundingBatch.Count + " objects into " + listName);
                                     boundingBatch.Clear();
                                     jsonText.Clear();
 
@@ -181,7 +168,7 @@ namespace Datafordelen.Address
                                 {
                                     _kafkaProducer.Produce(listName, jsonText);
                                     jsonText.Clear();
-                                    
+
                                 }
                             }
                         }
@@ -205,23 +192,10 @@ namespace Datafordelen.Address
                             hussnummerBatch.Add(ob);
                         }
                         jsonText.Clear();
-                        foreach (var hus in hussnummerBatch)
-                        {
-                            foreach (var adress in adresspunktBatch)
-                            {
-                                JObject ohus = JObject.Parse(hus);
-                                JObject oadress = JObject.Parse(adress);
-                                if (ohus["addressPoint"].Equals(oadress["id_lokalId"]))
-                                {
-                                    ohus["position"] = oadress["position"];
-                                    var newhus = JsonConvert.SerializeObject(ohus, Formatting.Indented);
-                                    newHussnummerBatch.Add(newhus);
-                                }
-                            }
-                        }
-
+                        newHussnummerBatch = AddPositionToHouseObjects(adresspunktBatch,hussnummerBatch);
+                        
                         _kafkaProducer.Produce(listName, newHussnummerBatch);
-                        _logger.LogInformation("Wrote " + newHussnummerBatch.Count + " objects into " + listName );
+                        _logger.LogInformation("Wrote " + newHussnummerBatch.Count + " objects into " + listName);
                         adresspunktBatch.Clear();
                         hussnummerBatch.Clear();
                         newHussnummerBatch.Clear();
@@ -230,37 +204,57 @@ namespace Datafordelen.Address
                     {
                         var boundingBatch = newfilterAdressPosition(jsonText, minX, minY, maxX, maxY);
                         _kafkaProducer.Produce(listName, boundingBatch);
-                        _logger.LogInformation("Wrote " + boundingBatch.Count + " objects into " + listName );
+                        _logger.LogInformation("Wrote " + boundingBatch.Count + " objects into " + listName);
                         boundingBatch.Clear();
                         jsonText.Clear();
                     }
                     else
                     {
                         _kafkaProducer.Produce(listName, jsonText);
-                        _logger.LogInformation("Wrote " + jsonText.Count + " objects into " + listName );
+                        _logger.LogInformation("Wrote " + jsonText.Count + " objects into " + listName);
                         jsonText.Clear();
                     }
                 }
             }
         }
 
+        private List<string> AddPositionToHouseObjects(List<string> addresspunktItems, List<string> HussnummerItems)
+        {
+            var newHussnummerItems = new List<string>();
+            foreach (var house in HussnummerItems)
+            {
+                foreach (var adress in addresspunktItems)
+                {
+                    var objHouse = JObject.Parse(house);
+                    var objAdress = JObject.Parse(adress);
+                    if (objHouse["addressPoint"].Equals(objAdress["id_lokalId"]))
+                    {
+                        objHouse["position"] = objAdress["position"];
+                        var newHouse = JsonConvert.SerializeObject(objHouse, Formatting.Indented);
+                        newHussnummerItems.Add(newHouse);
+                    }
+                }
+            }
+
+            return newHussnummerItems;
+        }
         private List<string> newfilterAdressPosition(List<string> batch, double minX, double minY, double maxX, double maxY)
         {
 
-            List<string> filteredBatch = new List<string>();
-            GeometryFactory geometryFactory = new GeometryFactory();
+            var filteredBatch = new List<string>();
+            var geometryFactory = new GeometryFactory();
             Geometry line;
             Geometry point;
             Geometry polygon;
             Geometry multipoint;
             string name;
             string value = "";
-            WKTReader rdr = new WKTReader(geometryFactory);
+            var rdr = new WKTReader(geometryFactory);
             var boundingBox = new NetTopologySuite.Geometries.Envelope(minX, maxX, minY, maxY);
             foreach (var document in batch)
             {
-                JObject o = JObject.Parse(document);
-                foreach (JProperty jp in o.Properties().ToList())
+                var o = JObject.Parse(document);
+                foreach (var jp in o.Properties().ToList())
                 {
                     if (jp.Name == "position")
                     {
@@ -326,7 +320,7 @@ namespace Datafordelen.Address
 
         private string ChangeAdressNames(JObject jo)
         {
-            foreach (JProperty jp in jo.Properties().ToList())
+            foreach (var jp in jo.Properties().ToList())
             {
                 switch (jp.Name)
                 {
@@ -340,7 +334,7 @@ namespace Datafordelen.Address
                         jp.Replace(new JProperty("businessProces", jp.Value));
                         break;
                     case "registreringFra":
-                        string dateValue = (string)jp.Value;
+                        var dateValue = (string)jp.Value;
                         jp.Value = ChangeDateFormat(dateValue);
                         jp.Replace(new JProperty("registrationFrom", jp.Value));
                         break;
@@ -503,7 +497,7 @@ namespace Datafordelen.Address
             return obj;
         }
 
-        public  string ChangeDateFormat(string dateString)
+        public string ChangeDateFormat(string dateString)
         {
             DateTime result;
             if (dateString == null)
@@ -519,9 +513,9 @@ namespace Datafordelen.Address
                     result = DateTime.Parse(dateString, null, System.Globalization.DateTimeStyles.RoundtripKind);
                     return result.ToString("yyyy-MM-dd HH:mm:ss");
                 }
-                catch (ArgumentNullException )
+                catch (ArgumentNullException)
                 {
-                    
+
                     _logger.LogError("{0} is not in the correct format.", dateString);
                 }
             }

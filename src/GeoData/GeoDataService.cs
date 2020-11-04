@@ -46,7 +46,7 @@ namespace Datafordelen.GeoData
         {
             var fileEntries = Directory.GetFiles(sourceDirectory).ToList();
             var filtered = new List<String>();
-            List<string> filterList = geoFilter.Split(",").ToList();  
+            var filterList = geoFilter.Split(",").ToList();  
             var result = fileEntries.Where(a => filterList.Any(b => a.Contains(b))).ToList();
 
             foreach (string fileName in result)
@@ -63,7 +63,7 @@ namespace Datafordelen.GeoData
         private void convertToGeojson(string list, string convertScriptFilename)
         {
 
-            List<string> filterList = list.Split(",").ToList(); 
+            var filterList = list.Split(",").ToList(); 
             foreach (var item in filterList)
             {
                 _logger.LogInformation(item);
@@ -88,10 +88,10 @@ namespace Datafordelen.GeoData
 
         private void filterGeoPosition(String fileName, double minX, double maxX, double minY, double maxY)
         {
-            String jsonDoc = "";
-            List<string> batch = new List<string>();
+            var jsonDoc = "";
+            var batch = new List<string>();
             var boundingBox = new NetTopologySuite.Geometries.Envelope(minX, maxX, minY, maxY);
-            NetTopologySuite.Features.Feature feature = new NetTopologySuite.Features.Feature();
+            var feature = new NetTopologySuite.Features.Feature();
 
             using (FileStream s = File.Open(fileName, FileMode.Open))
             using (var streamReader = new StreamReader(s))

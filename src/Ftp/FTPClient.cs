@@ -39,7 +39,7 @@ namespace Datafordelen.Ftp
             downloadLink = feedwords[5];
             _logger.LogInformation(downloadLink);
 
-            WebClient client = new WebClient();
+            var client = new WebClient();
             client.DownloadFile(
                 downloadLink, filepath);
         }
