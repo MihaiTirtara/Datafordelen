@@ -8,10 +8,6 @@ RUN dotnet restore
 #Copy the convert script
 COPY ./src/convert_script.sh ./out/datafordeleren/
 
-COPY ./src/geodanmark_60_nohist.plads.gml ./out/datafordeleren/
-COPY ./src/geodanmark_60_nohist.vandafstroemningsopland.gml ./out/datafordeleren/
-
-
 # Copy everything else and build
 COPY . ./
 RUN dotnet publish -c Release -o out
@@ -23,6 +19,7 @@ COPY --from=build-env /app/out .
 
 RUN apt-get update && apt-get install -y \
   gdal-bin
+
 
 ENTRYPOINT ["dotnet", "Datafordeleren.dll"]
 
