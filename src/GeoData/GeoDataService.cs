@@ -32,7 +32,7 @@ namespace Datafordelen.GeoData
         {
             await _client.GetFileFtp(_appSettings.FtpServer, _appSettings.GeoUserName, _appSettings.GeoPassword, _appSettings.GeoUnzipPath);
             _client.UnzipFile(_appSettings.GeoUnzipPath, _appSettings.GeoGmlPath);
-            convertToGeojson(_appSettings.GeoFieldList,_appSettings.ConvertScriptFileName);
+            convertToGeojson(_appSettings.GeoFieldList, _appSettings.ConvertScriptFileName);
             ProcessGeoDirectory(_appSettings.GeoUnzipPath,
              _appSettings.GeoProcessedPath,
              _appSettings.GeoFieldList,
@@ -46,7 +46,7 @@ namespace Datafordelen.GeoData
         {
             var fileEntries = Directory.GetFiles(sourceDirectory).ToList();
             var filtered = new List<String>();
-            var filterList = geoFilter.Split(",").ToList();  
+            var filterList = geoFilter.Split(",").ToList();
             var result = fileEntries.Where(a => filterList.Any(b => a.Contains(b))).ToList();
 
             foreach (string fileName in result)
@@ -56,14 +56,14 @@ namespace Datafordelen.GeoData
                 var dest = Path.Combine(destinationDirectory, fileNoExtension + ".json");
                 filterGeoPosition(fileName, minX, maxX, minY, maxY);
                 File.Move(fileName, dest);
-                _logger.LogInformation(fileName + " moved in new directory " );
+                _logger.LogInformation(fileName + " moved in new directory ");
             }
         }
 
         private void convertToGeojson(string list, string convertScriptFilename)
         {
 
-            var filterList = list.Split(",").ToList(); 
+            var filterList = list.Split(",").ToList();
             foreach (var item in filterList)
             {
                 _logger.LogInformation(item);
@@ -83,7 +83,7 @@ namespace Datafordelen.GeoData
                 proc.Start();
                 proc.WaitForExit();
             }
-            
+
         }
 
         private void filterGeoPosition(String fileName, double minX, double maxX, double minY, double maxY)
@@ -123,13 +123,7 @@ namespace Datafordelen.GeoData
                                             var atr = feature.Attributes;
                                             if (boundingBox.Intersects(geo.EnvelopeInternal))
                                             {
-                                                var jsonObj = new
-                                                {
-                                                    gml_id = atr.GetOptionalValue("gml_id"),
-                                                    id_lokalId = atr.GetOptionalValue("id_lokalid"),
-                                                    geo = geo.ToString()
-                                                };
-                                                jsonDoc = JsonConvert.SerializeObject(jsonObj);
+                                                jsonDoc = createGeoObject(atr,geo);
                                                 batch.Add(jsonDoc);
                                                 if (batch.Count >= 5000)
                                                 {
@@ -145,13 +139,8 @@ namespace Datafordelen.GeoData
                                             _logger.LogError("Error writing data: {0}.", e.GetType().Name);
                                             var geo = feature.Geometry;
                                             var atr = feature.Attributes;
-                                            var jsonObj = new
-                                            {
-                                                gml_id = atr.GetOptionalValue("gml_id"),
-                                                id_lokalId = atr.GetOptionalValue("id_lokalid"),
-                                                geo = geo.ToString()
-                                            };
-                                            jsonDoc = JsonConvert.SerializeObject(jsonObj);
+                                            
+                                            jsonDoc = createGeoObject(atr,geo);
                                             batch.Add(jsonDoc);
                                             _producer.Produce(topicname, batch);
                                             _logger.LogInformation("Wrote " + batch.Count + " objects into " + topicname);
@@ -172,6 +161,18 @@ namespace Datafordelen.GeoData
                     }
                 }
             }
+        }
+
+        private string createGeoObject(NetTopologySuite.Features.IAttributesTable atr, NetTopologySuite.Geometries.Geometry geo)
+        {
+            var jsonObj = new
+            {
+                gml_id = atr.GetOptionalValue("gml_id"),
+                id_lokalId = atr.GetOptionalValue("id_lokalid"),
+                geo = geo.ToString()
+            };
+            var jsonDoc = JsonConvert.SerializeObject(jsonObj);
+            return jsonDoc;
         }
     }
 }
